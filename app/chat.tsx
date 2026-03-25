@@ -1,11 +1,11 @@
 import { StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
-
-import { colors } from "../theme/colors";
+import { Text, useTheme } from "react-native-paper";
 
 export default function ChatScreen() {
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Text variant="headlineSmall">Chat screen coming soon.</Text>
     </View>
   );
@@ -16,6 +16,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.dark.bgPrimary,
   },
 });

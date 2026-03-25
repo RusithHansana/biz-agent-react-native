@@ -8,10 +8,10 @@ export default function Index() {
 
   return (
     <LandingHero
-      businessName={businessProfile.name}
-      tagline={businessProfile.tagline}
-      location={businessProfile.location}
-      onPressChat={() => router.push("/chat" as never)}
+      businessName={businessProfile?.name || "Our Business"}
+      tagline={businessProfile?.tagline || ""}
+      location={businessProfile?.location || ""}
+      onPressChat={() => router.push("/chat")}
     />
   );
 }
