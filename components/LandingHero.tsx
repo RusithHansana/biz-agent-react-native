@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { Button, Card, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
@@ -15,18 +17,33 @@ export interface LandingHeroProps {
 }
 
 export function LandingHero({ businessName, tagline, location, logoUri, onPressChat }: LandingHeroProps) {
+  const [imgError, setImgError] = useState(false);
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Card mode="contained" style={styles.card}>
         <Card.Content style={styles.content}>
-          {logoUri ? <Image source={{ uri: logoUri }} testID="landing-hero-logo" style={styles.logo} /> : null}
+          {logoUri && !imgError ? (
+            <Image
+              source={{ uri: logoUri }}
+              testID="landing-hero-logo"
+              style={styles.logo}
+              onError={() => setImgError(true)}
+            />
+          ) : null}
 
-          <Text style={[styles.textBase, styles.businessName]}>{businessName}</Text>
-          <Text style={[styles.textBase, styles.tagline]}>{tagline}</Text>
+          <Text style={[styles.textBase, styles.businessName]} numberOfLines={2} ellipsizeMode="tail">
+            {businessName}
+          </Text>
+          <Text style={[styles.textBase, styles.tagline]} numberOfLines={2} ellipsizeMode="tail">
+            {tagline}
+          </Text>
 
           <View style={styles.locationRow}>
             <MaterialCommunityIcons name="map-marker-outline" size={18} color={colors.dark.textSecondary} />
-            <Text style={[styles.textBase, styles.location]}>{location}</Text>
+            <Text style={[styles.textBase, styles.location]} numberOfLines={1} ellipsizeMode="tail">
+              {location}
+            </Text>
           </View>
 
           <Button
@@ -35,6 +52,7 @@ export function LandingHero({ businessName, tagline, location, logoUri, onPressC
             buttonColor={colors.dark.accentPrimary}
             textColor={colors.dark.userBubbleText}
             onPress={onPressChat}
+            disabled={!onPressChat}
             accessibilityLabel="Chat with Agent"
             accessibilityHint="Opens the chat screen"
             contentStyle={styles.buttonContent}
@@ -45,7 +63,7 @@ export function LandingHero({ businessName, tagline, location, logoUri, onPressC
           </Button>
         </Card.Content>
       </Card>
-    </View>
+    </SafeAreaView>
   );
 }
 
