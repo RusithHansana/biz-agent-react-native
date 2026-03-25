@@ -9,10 +9,10 @@ export interface TypeScaleToken {
 }
 
 export const fontFamilies = {
-  headingSemiBold: "Outfit",
-  headingBold: "Outfit",
-  bodyRegular: "Inter",
-  bodyMedium: "Inter",
+  headingSemiBold: "Outfit-SemiBold",
+  headingBold: "Outfit-Bold",
+  bodyRegular: "Inter-Regular",
+  bodyMedium: "Inter-Medium",
 } as const;
 
 export const typeScale = {
