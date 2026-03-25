@@ -1,0 +1,56 @@
+{
+    "name": "Northbridge Consulting",
+    "tagline": "Practical strategy for growing teams",
+    "location": "Colombo, Sri Lanka",
+    "services": [
+        {
+            "id": "intro-call",
+            "name": "Intro Consultation",
+            "description": "A 30-minute call to understand your needs.",
+            "price": "$0"
+        },
+        {
+            "id": "growth-audit",
+            "name": "Growth Audit",
+            "description": "Deep dive into your funnel and operations.",
+            "price": "From $150"
+        },
+        {
+            "id": "implementation-sprint",
+            "name": "Implementation Sprint",
+            "description": "Hands-on delivery support for prioritized growth initiatives.",
+            "price": "$299"
+        }
+    ],
+    "hours": [
+        {
+            "day": "Mon",
+            "start": "09:00",
+            "end": "17:00"
+        },
+        {
+            "day": "Tue",
+            "start": "09:00",
+            "end": "17:00"
+        },
+        {
+            "day": "Wed",
+            "start": "09:00",
+            "end": "17:00"
+        },
+        {
+            "day": "Thu",
+            "start": "09:00",
+            "end": "17:00"
+        },
+        {
+            "day": "Fri",
+            "start": "09:00",
+            "end": "17:00"
+        }
+    ],
+    "contact": {
+        "email": "hello@northbridge.example",
+        "website": "https://northbridge.example"
+    }
+}
