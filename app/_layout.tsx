@@ -34,7 +34,7 @@ export default function RootLayout() {
   return (
     <PaperProvider theme={paperDarkTheme}>
       <AppProvider>
-        <Stack />
+        <Stack screenOptions={{ headerShown: false }} />
       </AppProvider>
     </PaperProvider>
   );
