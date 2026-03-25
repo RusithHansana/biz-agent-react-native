@@ -59,13 +59,18 @@ describe("appReducer", () => {
     expect(next.isConnected).toBe(false);
   });
 
-  it("adds and removes pending bookings", () => {
+  it("adds and removes pending bookings without allowing duplicates", () => {
     const withBooking = appReducer(initialState, {
       type: ADD_PENDING_BOOKING,
       payload: sampleBooking,
     });
 
-    const withoutBooking = appReducer(withBooking, {
+    const withDuplicateBooking = appReducer(withBooking, {
+      type: ADD_PENDING_BOOKING,
+      payload: sampleBooking,
+    });
+
+    const withoutBooking = appReducer(withDuplicateBooking, {
       type: REMOVE_PENDING_BOOKING,
       payload: {
         email: sampleBooking.email,
@@ -74,6 +79,7 @@ describe("appReducer", () => {
     });
 
     expect(withBooking.pendingBookings).toHaveLength(1);
+    expect(withDuplicateBooking.pendingBookings).toHaveLength(1);
     expect(withoutBooking.pendingBookings).toHaveLength(0);
   });
 });

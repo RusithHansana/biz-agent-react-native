@@ -43,11 +43,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         isConnected: action.payload,
       };
-    case ADD_PENDING_BOOKING:
+    case ADD_PENDING_BOOKING: {
+      const isDuplicate = state.pendingBookings.some(
+        (booking) => booking.email === action.payload.email && booking.dateTime === action.payload.dateTime,
+      );
+      if (isDuplicate) {
+        return state;
+      }
       return {
         ...state,
         pendingBookings: [...state.pendingBookings, action.payload],
       };
+    }
     case REMOVE_PENDING_BOOKING:
       return {
         ...state,
