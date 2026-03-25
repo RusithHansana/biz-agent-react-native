@@ -9,6 +9,8 @@ import { paperDarkTheme } from "../theme/paperTheme";
 
 void SplashScreen.preventAutoHideAsync();
 
+import { AppProvider } from "../state/AppContext";
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     "Inter-Regular": require("../assets/fonts/Inter-Regular.ttf"),
@@ -32,7 +34,9 @@ export default function RootLayout() {
 
   return (
     <PaperProvider theme={paperDarkTheme}>
-      <Stack />
+      <AppProvider>
+        <Stack />
+      </AppProvider>
     </PaperProvider>
   );
 }
