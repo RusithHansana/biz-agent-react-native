@@ -5,11 +5,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { PaperProvider } from "react-native-paper";
 
+import { AppProvider } from "../state/AppContext";
 import { paperDarkTheme } from "../theme/paperTheme";
 
 void SplashScreen.preventAutoHideAsync();
-
-import { AppProvider } from "../state/AppContext";
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

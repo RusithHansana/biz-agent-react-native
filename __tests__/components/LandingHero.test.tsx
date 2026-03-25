@@ -5,6 +5,10 @@ import renderer, { act } from "react-test-renderer";
 import type { ReactTestRenderer } from "react-test-renderer";
 import { LandingHero } from "../../components/LandingHero";
 
+jest.mock("@expo/vector-icons", () => ({
+  MaterialCommunityIcons: () => null,
+}));
+
 const renderLandingHero = (overrideProps: Partial<React.ComponentProps<typeof LandingHero>> = {}) => {
   const defaultProps: React.ComponentProps<typeof LandingHero> = {
     businessName: "Cedar & Co. Design",
