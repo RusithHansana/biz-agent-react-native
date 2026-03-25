@@ -35,7 +35,19 @@ const isApiResponse = <T>(value: unknown): value is ApiResponse<T> => {
   const hasDataField = Object.prototype.hasOwnProperty.call(candidate, "data");
   const hasErrorField = Object.prototype.hasOwnProperty.call(candidate, "error");
 
-  return hasBooleanSuccess && hasDataField && hasErrorField;
+  if (!hasBooleanSuccess || !hasDataField || !hasErrorField) {
+    return false;
+  }
+
+  if (candidate.error !== null) {
+    if (typeof candidate.error !== "object") return false;
+    const err = candidate.error as Record<string, unknown>;
+    if (typeof err.code !== "string" || typeof err.message !== "string") {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 const asErrorResponse = <T>(code: string, message: string): ApiResponse<T> => ({
@@ -54,6 +66,16 @@ const request = async <T>(path: string, init?: RequestInit): Promise<ApiResponse
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, apiClientConfig.timeoutMs);
+
+  if (init?.signal) {
+    if (init.signal.aborted) {
+      controller.abort();
+    } else {
+      init.signal.addEventListener("abort", () => {
+        controller.abort();
+      });
+    }
+  }
 
   const defaultHeaders = new Headers({
     Accept: "application/json",
