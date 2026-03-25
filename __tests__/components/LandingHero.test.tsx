@@ -1,8 +1,7 @@
 import React from "react";
 
-import renderer, { act } from "react-test-renderer";
-
-import type { ReactTestRenderer } from "react-test-renderer";
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Button } from "react-native-paper";
 import { LandingHero } from "../../components/LandingHero";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -17,59 +16,44 @@ const renderLandingHero = (overrideProps: Partial<React.ComponentProps<typeof La
     ...overrideProps,
   };
 
-  let tree: ReactTestRenderer;
-
-  act(() => {
-    tree = renderer.create(<LandingHero {...defaultProps} />);
-  });
-
-  return tree!;
+  return render(<LandingHero {...defaultProps} />);
 };
-
-afterEach(() => {
-  act(() => {
-    renderer.create(<></>).unmount();
-  });
-});
 
 describe("LandingHero", () => {
   it("renders business identity content and CTA", () => {
-    const tree = renderLandingHero();
+    renderLandingHero();
 
-    expect(tree.root.findByProps({ children: "Cedar & Co. Design" })).toBeTruthy();
-    expect(tree.root.findByProps({ children: "Timeless interiors, modern comfort" })).toBeTruthy();
-    expect(tree.root.findByProps({ children: "Colombo, Sri Lanka" })).toBeTruthy();
-    expect(tree.root.findByProps({ children: "Chat with Agent" })).toBeTruthy();
+    expect(screen.getByText("Cedar & Co. Design")).toBeTruthy();
+    expect(screen.getByText("Timeless interiors, modern comfort")).toBeTruthy();
+    expect(screen.getByText("Colombo, Sri Lanka")).toBeTruthy();
+    expect(screen.getByText("Chat with Agent")).toBeTruthy();
   });
 
   it("wires onPressChat to CTA when provided", () => {
     const onPressChat = jest.fn();
-    const tree = renderLandingHero({ onPressChat });
+    renderLandingHero({ onPressChat });
 
-    const ctaButton = tree.root.findByProps({ testID: "landing-hero-chat-cta" });
-
-    act(() => {
-      ctaButton.props.onPress();
-    });
+    fireEvent.press(screen.getByTestId("landing-hero-chat-cta"));
 
     expect(onPressChat).toHaveBeenCalledTimes(1);
   });
 
   it("renders optional logo when logoUri is provided", () => {
-    const tree = renderLandingHero({ logoUri: "https://example.com/logo.png" });
+    renderLandingHero({ logoUri: "https://example.com/logo.png" });
 
-    const logo = tree.root.findByProps({ testID: "landing-hero-logo" });
+    const logo = screen.getByTestId("landing-hero-logo");
 
     expect(logo).toBeTruthy();
     expect(logo.props.source).toEqual({ uri: "https://example.com/logo.png" });
   });
 
   it("adds accessibility metadata and minimum hit target to CTA", () => {
-    const tree = renderLandingHero();
-    const ctaButton = tree.root.findByProps({ testID: "landing-hero-chat-cta" });
+    const rendered = renderLandingHero();
+    const ctaButton = screen.getByTestId("landing-hero-chat-cta");
+    const paperButton = rendered.UNSAFE_getByType(Button);
 
     expect(ctaButton.props.accessibilityLabel).toBe("Chat with Agent");
     expect(ctaButton.props.accessibilityHint).toBe("Opens the chat screen");
-    expect(ctaButton.props.contentStyle.minHeight).toBeGreaterThanOrEqual(44);
+    expect(paperButton.props.contentStyle.minHeight).toBeGreaterThanOrEqual(44);
   });
 });
