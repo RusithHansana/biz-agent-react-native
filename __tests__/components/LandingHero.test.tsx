@@ -1,10 +1,9 @@
 import React from "react";
 
-import { PaperProvider } from "react-native-paper";
 import renderer, { act } from "react-test-renderer";
 
+import type { ReactTestRenderer } from "react-test-renderer";
 import { LandingHero } from "../../components/LandingHero";
-import { paperDarkTheme } from "../../theme/paperTheme";
 
 const renderLandingHero = (overrideProps: Partial<React.ComponentProps<typeof LandingHero>> = {}) => {
   const defaultProps: React.ComponentProps<typeof LandingHero> = {
@@ -14,12 +13,20 @@ const renderLandingHero = (overrideProps: Partial<React.ComponentProps<typeof La
     ...overrideProps,
   };
 
-  return renderer.create(
-    <PaperProvider theme={paperDarkTheme}>
-      <LandingHero {...defaultProps} />
-    </PaperProvider>,
-  );
+  let tree: ReactTestRenderer;
+
+  act(() => {
+    tree = renderer.create(<LandingHero {...defaultProps} />);
+  });
+
+  return tree!;
 };
+
+afterEach(() => {
+  act(() => {
+    renderer.create(<></>).unmount();
+  });
+});
 
 describe("LandingHero", () => {
   it("renders business identity content and CTA", () => {
