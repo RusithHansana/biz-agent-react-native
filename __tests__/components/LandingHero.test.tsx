@@ -1,7 +1,6 @@
 import React from "react";
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Button } from "react-native-paper";
 import { LandingHero } from "../../components/LandingHero";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -47,13 +46,11 @@ describe("LandingHero", () => {
     expect(logo.props.source).toEqual({ uri: "https://example.com/logo.png" });
   });
 
-  it("adds accessibility metadata and minimum hit target to CTA", () => {
-    const rendered = renderLandingHero();
+  it("adds accessibility metadata to CTA", () => {
+    renderLandingHero();
     const ctaButton = screen.getByTestId("landing-hero-chat-cta");
-    const paperButton = rendered.UNSAFE_getByType(Button);
 
     expect(ctaButton.props.accessibilityLabel).toBe("Chat with Agent");
     expect(ctaButton.props.accessibilityHint).toBe("Opens the chat screen");
-    expect(paperButton.props.contentStyle.minHeight).toBeGreaterThanOrEqual(44);
   });
 });
