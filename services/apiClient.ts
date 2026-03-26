@@ -30,12 +30,20 @@ const isApiResponse = <T>(value: unknown): value is ApiResponse<T> => {
     return false;
   }
 
-  const candidate = value as Partial<ApiResponse<T>>;
+  const candidate = value as Record<string, unknown>;
   const hasBooleanSuccess = typeof candidate.success === "boolean";
   const hasDataField = Object.prototype.hasOwnProperty.call(candidate, "data");
   const hasErrorField = Object.prototype.hasOwnProperty.call(candidate, "error");
 
   if (!hasBooleanSuccess || !hasDataField || !hasErrorField) {
+    return false;
+  }
+
+  // Validate success/error consistency
+  if (candidate.success === true && candidate.error !== null) {
+    return false;
+  }
+  if (candidate.success === false && candidate.data !== null) {
     return false;
   }
 
@@ -67,13 +75,19 @@ const request = async <T>(path: string, init?: RequestInit): Promise<ApiResponse
     controller.abort();
   }, apiClientConfig.timeoutMs);
 
-  if (init?.signal) {
-    if (init.signal.aborted) {
+  // Forward caller's AbortSignal to our internal controller, storing
+  // the listener reference so it can be removed in `finally` to prevent leaks.
+  let onCallerAbort: (() => void) | undefined;
+  const callerSignal = init?.signal;
+
+  if (callerSignal) {
+    if (callerSignal.aborted) {
       controller.abort();
     } else {
-      init.signal.addEventListener("abort", () => {
+      onCallerAbort = () => {
         controller.abort();
-      });
+      };
+      callerSignal.addEventListener("abort", onCallerAbort);
     }
   }
 
@@ -125,6 +139,9 @@ const request = async <T>(path: string, init?: RequestInit): Promise<ApiResponse
     return asErrorResponse("UNKNOWN_ERROR", "Unexpected error while calling backend.");
   } finally {
     clearTimeout(timeoutId);
+    if (callerSignal && onCallerAbort) {
+      callerSignal.removeEventListener("abort", onCallerAbort);
+    }
   }
 };
 
