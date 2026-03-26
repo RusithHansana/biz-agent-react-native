@@ -36,7 +36,7 @@ function readChatRequest(body: unknown): ChatRequest | null {
     return null;
   }
 
-  if (!isValidHistory(candidate.history)) {
+  if (!isValidHistory(candidate.history) || candidate.history.length > 50) {
     return null;
   }
 
@@ -69,7 +69,7 @@ export default async function handler(req: Request, res: Response): Promise<void
       data: null,
       error: {
         code: 'INVALID_INPUT',
-        message: 'Provide a non-empty message and a valid history array.',
+        message: 'Provide a non-empty message and a valid history array (max 50 items).',
       },
     };
 
@@ -92,6 +92,8 @@ export default async function handler(req: Request, res: Response): Promise<void
 
     res.status(200).json(payload);
   } catch (error) {
+    console.error('Gemini chat request failed:', error);
+
     if (error instanceof GeminiTimeoutError) {
       const payload: ApiResponse<null> = {
         success: false,

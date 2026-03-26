@@ -8,7 +8,8 @@ type GeminiContent = {
 };
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
-const DEFAULT_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS ?? '15000');
+const parsedTimeout = Number(process.env.GEMINI_TIMEOUT_MS);
+const DEFAULT_TIMEOUT_MS = Number.isNaN(parsedTimeout) || parsedTimeout <= 0 ? 15000 : parsedTimeout;
 
 export class GeminiTimeoutError extends Error {
   constructor(message = 'Gemini request timed out') {

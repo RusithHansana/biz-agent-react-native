@@ -73,7 +73,7 @@ describe('POST /api/chat handler', () => {
       data: null,
       error: {
         code: 'INVALID_INPUT',
-        message: 'Provide a non-empty message and a valid history array.',
+        message: 'Provide a non-empty message and a valid history array (max 50 items).',
       },
     });
     expect(mockedGenerateGeminiReply).not.toHaveBeenCalled();
