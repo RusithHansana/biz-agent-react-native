@@ -1,5 +1,3 @@
-import type { Request, Response } from 'express';
-
 import handler from '../../server/api/chat';
 import { GeminiTimeoutError, generateGeminiReply } from '../../server/lib/gemini';
 
@@ -13,7 +11,10 @@ jest.mock('../../server/lib/gemini', () => ({
   },
 }));
 
-type MockRequest = Pick<Request, 'method' | 'body'>;
+type MockRequest = {
+  method: string;
+  body: unknown;
+};
 
 type MockResponse = {
   statusCode?: number;
@@ -21,6 +22,8 @@ type MockResponse = {
   status: (code: number) => MockResponse;
   json: (payload: unknown) => void;
 };
+
+type ChatHandler = (req: MockRequest, res: MockResponse) => Promise<void>;
 
 function createMockResponse(): MockResponse {
   return {
@@ -45,7 +48,7 @@ describe('POST /api/chat handler', () => {
     const req: MockRequest = { method: 'GET', body: {} };
     const res = createMockResponse();
 
-    await handler(req as Request, res as unknown as Response);
+    await (handler as unknown as ChatHandler)(req, res);
 
     expect(res.statusCode).toBe(405);
     expect(res.body).toEqual({
@@ -62,7 +65,7 @@ describe('POST /api/chat handler', () => {
     const req: MockRequest = { method: 'POST', body: { message: '', history: {} } };
     const res = createMockResponse();
 
-    await handler(req as Request, res as unknown as Response);
+    await (handler as unknown as ChatHandler)(req, res);
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toEqual({
@@ -98,7 +101,7 @@ describe('POST /api/chat handler', () => {
     };
     const res = createMockResponse();
 
-    await handler(req as Request, res as unknown as Response);
+    await (handler as unknown as ChatHandler)(req, res);
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
@@ -120,7 +123,7 @@ describe('POST /api/chat handler', () => {
     };
     const res = createMockResponse();
 
-    await handler(req as Request, res as unknown as Response);
+    await (handler as unknown as ChatHandler)(req, res);
 
     expect(res.statusCode).toBe(504);
     expect(res.body).toEqual({
