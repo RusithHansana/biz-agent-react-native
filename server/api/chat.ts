@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 
+import { requireApiKey } from '../lib/auth';
 import { GeminiTimeoutError, generateGeminiReply } from '../lib/gemini';
+import { rateLimit } from '../lib/rateLimiter';
 import { buildSystemPrompt } from '../lib/systemPrompt';
+import { isNonEmptyString, readJsonObject, requirePost } from '../lib/validation';
 import type { ApiResponse } from '../types/api';
 import type { ChatRequest, ChatResponseData, Message } from '../types/chat';
 
@@ -26,13 +29,12 @@ function isValidHistory(value: unknown): value is Message[] {
 }
 
 function readChatRequest(body: unknown): ChatRequest | null {
-  if (typeof body !== 'object' || body === null) {
+  const candidate = readJsonObject(body);
+  if (!candidate) {
     return null;
   }
 
-  const candidate = body as Partial<ChatRequest>;
-
-  if (typeof candidate.message !== 'string' || candidate.message.trim().length === 0) {
+  if (!isNonEmptyString(candidate.message)) {
     return null;
   }
 
@@ -46,18 +48,28 @@ function readChatRequest(body: unknown): ChatRequest | null {
   };
 }
 
-export default async function handler(req: Request, res: Response): Promise<void> {
-  if (req.method !== 'POST') {
-    const payload: ApiResponse<null> = {
-      success: false,
-      data: null,
-      error: {
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Only POST requests are allowed.',
-      },
-    };
+function runMiddleware(
+  req: Request,
+  res: Response,
+  middleware: (req: Request, res: Response, next: () => void) => void
+): boolean {
+  let shouldContinue = false;
+  middleware(req, res, () => {
+    shouldContinue = true;
+  });
+  return shouldContinue;
+}
 
-    res.status(405).json(payload);
+export default async function handler(req: Request, res: Response): Promise<void> {
+  if (!requirePost(req, res)) {
+    return;
+  }
+
+  if (!runMiddleware(req, res, requireApiKey)) {
+    return;
+  }
+
+  if (!runMiddleware(req, res, rateLimit)) {
     return;
   }
 
