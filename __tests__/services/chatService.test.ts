@@ -1,5 +1,5 @@
-import { sendMessage } from "../../services/chatService";
 import { apiClient } from "../../services/apiClient";
+import { sendMessage } from "../../services/chatService";
 
 import type { ApiResponse } from "../../types/api";
 import type { ChatResponseData } from "../../types/chat";
@@ -16,6 +16,17 @@ const mockedRequest = apiClient.request as jest.MockedFunction<typeof apiClient.
 describe("chatService.sendMessage", () => {
   beforeEach(() => {
     mockedRequest.mockReset();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("throws an error if text is empty or whitespace", async () => {
+    await expect(sendMessage("", [])).rejects.toThrow("Message text cannot be empty");
+    await expect(sendMessage("   ", [])).rejects.toThrow("Message text cannot be empty");
+    expect(mockedRequest).not.toHaveBeenCalled();
   });
 
   it("calls apiClient.request with POST /api/chat and expected body", async () => {
@@ -78,5 +89,21 @@ describe("chatService.sendMessage", () => {
     const result = await sendMessage("Book a slot", []);
 
     expect(result).toEqual(apiResponse);
+  });
+
+  it("throws when apiClient.request rejects", async () => {
+    mockedRequest.mockRejectedValue(new Error("Network error"));
+    await expect(sendMessage("Test message", [])).rejects.toThrow("Network error");
+  });
+
+  it("throws on timeout", async () => {
+    mockedRequest.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, data: { reply: "Hi" }, error: null }), 40000))
+    );
+
+    const promise = sendMessage("Test message", []);
+    jest.advanceTimersByTime(30000);
+    
+    await expect(promise).rejects.toThrow("Request timed out");
   });
 });

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
+import * as Crypto from "expo-crypto";
 import { StyleSheet, View } from "react-native";
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { Appbar, useTheme } from "react-native-paper";
@@ -14,10 +15,11 @@ const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
 
 function toGiftedChatMessage(message: Message): IMessage {
+  const parsedDate = new Date(message.createdAt);
   return {
     _id: message.id,
     text: message.text,
-    createdAt: new Date(message.createdAt),
+    createdAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
     user: {
       _id: message.sender === "user" ? HUMAN_USER_ID : BOT_USER_ID,
       name: message.sender === "user" ? "You" : "AI Receptionist",
@@ -27,12 +29,19 @@ function toGiftedChatMessage(message: Message): IMessage {
 }
 
 function createMessageId(prefix: "user" | "bot"): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Crypto.randomUUID()}`;
 }
 
 export default function ChatScreen() {
   const theme = useTheme();
   const { state, dispatch } = useAppContext();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (state.messages.length > 0) {
@@ -58,16 +67,22 @@ export default function ChatScreen() {
 
   const onSend = useCallback(
     async (outgoing: IMessage[] = []) => {
-      if (!outgoing.length) {
+      if (!outgoing.length || state.isLoading) {
         return;
       }
 
       const draft = outgoing[0];
+      if (!draft.text?.trim()) {
+        return;
+      }
+
       const userMessage: Message = {
-        id: String(draft._id),
+        id: draft._id ? String(draft._id) : createMessageId("user"),
         text: draft.text,
         sender: "user",
-        createdAt: draft.createdAt instanceof Date ? draft.createdAt.toISOString() : new Date().toISOString(),
+        createdAt: draft.createdAt instanceof Date && !isNaN(draft.createdAt.getTime())
+          ? draft.createdAt.toISOString()
+          : new Date().toISOString(),
         status: "pending",
       };
 
@@ -76,7 +91,10 @@ export default function ChatScreen() {
 
       try {
         const response = await sendMessage(userMessage.text, state.messages);
-        if (response.success && response.data) {
+        
+        if (!isMounted.current) return;
+
+        if (response.success && response.data?.reply?.trim()) {
           dispatch({
             type: ADD_MESSAGE,
             payload: {
@@ -101,6 +119,8 @@ export default function ChatScreen() {
           },
         });
       } catch {
+        if (!isMounted.current) return;
+
         dispatch({
           type: ADD_MESSAGE,
           payload: {
@@ -112,10 +132,12 @@ export default function ChatScreen() {
           },
         });
       } finally {
-        dispatch({ type: SET_LOADING, payload: false });
+        if (isMounted.current) {
+          dispatch({ type: SET_LOADING, payload: false });
+        }
       }
     },
-    [dispatch, state.messages],
+    [dispatch, state.messages, state.isLoading],
   );
 
   return (
