@@ -1,6 +1,6 @@
-import type { NextFunction, Request, Response } from 'express';
-
 import { requireApiKey } from '../../server/lib/auth';
+
+type NextFunction = () => void;
 
 type MockRequest = {
   headers: Record<string, string | undefined>;
@@ -26,7 +26,7 @@ function createMockResponse(): MockResponse {
 }
 
 function invokeRequireApiKey(req: MockRequest, res: MockResponse, next: NextFunction): void {
-  requireApiKey(req as unknown as Request, res as unknown as Response, next);
+  requireApiKey(req as any, res as any, next);
 }
 
 describe('requireApiKey middleware', () => {
