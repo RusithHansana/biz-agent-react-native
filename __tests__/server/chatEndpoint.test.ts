@@ -1,5 +1,6 @@
 import handler from '../../server/api/chat';
 import { GeminiTimeoutError, generateGeminiReply } from '../../server/lib/gemini';
+import { resetRateLimiterStateForTests } from '../../server/lib/rateLimiter';
 
 jest.mock('../../server/lib/gemini', () => ({
   generateGeminiReply: jest.fn(),
@@ -14,6 +15,7 @@ jest.mock('../../server/lib/gemini', () => ({
 type MockRequest = {
   method: string;
   body: unknown;
+  headers?: Record<string, string | undefined>;
 };
 
 type MockResponse = {
@@ -39,13 +41,31 @@ function createMockResponse(): MockResponse {
 
 describe('POST /api/chat handler', () => {
   const mockedGenerateGeminiReply = jest.mocked(generateGeminiReply);
+  const originalEnv = {
+    API_KEY: process.env.API_KEY,
+    RATE_LIMIT_RPM: process.env.RATE_LIMIT_RPM,
+    RATE_LIMIT_TPM: process.env.RATE_LIMIT_TPM,
+    RATE_LIMIT_RPD: process.env.RATE_LIMIT_RPD,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    resetRateLimiterStateForTests();
+    process.env.API_KEY = 'test-api-key';
+    process.env.RATE_LIMIT_RPM = '4';
+    process.env.RATE_LIMIT_TPM = '200000';
+    process.env.RATE_LIMIT_RPD = '18';
+  });
+
+  afterEach(() => {
+    process.env.API_KEY = originalEnv.API_KEY;
+    process.env.RATE_LIMIT_RPM = originalEnv.RATE_LIMIT_RPM;
+    process.env.RATE_LIMIT_TPM = originalEnv.RATE_LIMIT_TPM;
+    process.env.RATE_LIMIT_RPD = originalEnv.RATE_LIMIT_RPD;
   });
 
   it('rejects non-POST methods', async () => {
-    const req: MockRequest = { method: 'GET', body: {} };
+    const req: MockRequest = { method: 'GET', body: {}, headers: { 'x-api-key': 'test-api-key' } };
     const res = createMockResponse();
 
     await (handler as unknown as ChatHandler)(req, res);
@@ -62,7 +82,11 @@ describe('POST /api/chat handler', () => {
   });
 
   it('validates request body', async () => {
-    const req: MockRequest = { method: 'POST', body: { message: '', history: {} } };
+    const req: MockRequest = {
+      method: 'POST',
+      body: { message: '', history: {} },
+      headers: { 'x-api-key': 'test-api-key' },
+    };
     const res = createMockResponse();
 
     await (handler as unknown as ChatHandler)(req, res);
@@ -87,6 +111,7 @@ describe('POST /api/chat handler', () => {
 
     const req: MockRequest = {
       method: 'POST',
+      headers: { 'x-api-key': 'test-api-key' },
       body: {
         message: 'Hi',
         history: [
@@ -119,6 +144,7 @@ describe('POST /api/chat handler', () => {
 
     const req: MockRequest = {
       method: 'POST',
+      headers: { 'x-api-key': 'test-api-key' },
       body: { message: 'Hello', history: [] },
     };
     const res = createMockResponse();
@@ -134,5 +160,82 @@ describe('POST /api/chat handler', () => {
         message: 'The assistant took too long to respond. Please try again.',
       },
     });
+  });
+
+  it('returns 401 when API key is missing', async () => {
+    const req: MockRequest = {
+      method: 'POST',
+      body: { message: 'Hello', history: [] },
+      headers: {},
+    };
+    const res = createMockResponse();
+
+    await (handler as unknown as ChatHandler)(req, res);
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      success: false,
+      data: null,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized.',
+      },
+    });
+    expect(mockedGenerateGeminiReply).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when API key is invalid', async () => {
+    const req: MockRequest = {
+      method: 'POST',
+      body: { message: 'Hello', history: [] },
+      headers: { 'x-api-key': 'wrong-key' },
+    };
+    const res = createMockResponse();
+
+    await (handler as unknown as ChatHandler)(req, res);
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({
+      success: false,
+      data: null,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized.',
+      },
+    });
+    expect(mockedGenerateGeminiReply).not.toHaveBeenCalled();
+  });
+
+  it('returns 429 when rate limit is exceeded', async () => {
+    process.env.RATE_LIMIT_RPM = '1';
+
+    mockedGenerateGeminiReply.mockResolvedValue({
+      reply: 'First response',
+      functionCall: { name: 'noop' },
+    });
+
+    const req: MockRequest = {
+      method: 'POST',
+      headers: { 'x-api-key': 'test-api-key' },
+      body: { message: 'Hello', history: [] },
+    };
+
+    const firstRes = createMockResponse();
+    await (handler as unknown as ChatHandler)(req, firstRes);
+    expect(firstRes.statusCode).toBe(200);
+
+    const secondRes = createMockResponse();
+    await (handler as unknown as ChatHandler)(req, secondRes);
+
+    expect(secondRes.statusCode).toBe(429);
+    expect(secondRes.body).toEqual({
+      success: false,
+      data: null,
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many requests. Please try again shortly.',
+      },
+    });
+    expect(mockedGenerateGeminiReply).toHaveBeenCalledTimes(1);
   });
 });
