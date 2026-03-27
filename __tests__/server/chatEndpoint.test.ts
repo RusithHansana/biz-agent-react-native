@@ -41,50 +41,86 @@ function createMockResponse(): MockResponse {
 
 describe('POST /api/chat handler', () => {
   const mockedGenerateGeminiReply = jest.mocked(generateGeminiReply);
-  const originalEnv = {
-    API_KEY: process.env.API_KEY,
-    RATE_LIMIT_RPM: process.env.RATE_LIMIT_RPM,
-    RATE_LIMIT_TPM: process.env.RATE_LIMIT_TPM,
-    RATE_LIMIT_RPD: process.env.RATE_LIMIT_RPD,
-  };
+  const originalEnv = process.env;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    process.env = {
+      ...originalEnv,
+      API_KEY: 'test-api-key',
+      RATE_LIMIT_RPM: '4',
+      RATE_LIMIT_TPM: '200000',
+      RATE_LIMIT_RPD: '18',
+    };
+    jest.resetAllMocks();
     resetRateLimiterStateForTests();
-    process.env.API_KEY = 'test-api-key';
-    process.env.RATE_LIMIT_RPM = '4';
-    process.env.RATE_LIMIT_TPM = '200000';
-    process.env.RATE_LIMIT_RPD = '18';
   });
 
   afterEach(() => {
-    process.env.API_KEY = originalEnv.API_KEY;
-    process.env.RATE_LIMIT_RPM = originalEnv.RATE_LIMIT_RPM;
-    process.env.RATE_LIMIT_TPM = originalEnv.RATE_LIMIT_TPM;
-    process.env.RATE_LIMIT_RPD = originalEnv.RATE_LIMIT_RPD;
+    process.env = { ...originalEnv };
+    resetRateLimiterStateForTests();
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   it('rejects non-POST methods', async () => {
-    const req: MockRequest = { method: 'GET', body: {}, headers: { 'x-api-key': 'test-api-key' } };
-    const res = createMockResponse();
+    const methods = ['GET', 'PUT', 'PATCH', 'DELETE'];
 
-    await (handler as unknown as ChatHandler)(req, res);
+    for (const method of methods) {
+      const req: MockRequest = { method, body: {}, headers: { 'x-api-key': 'test-api-key' } };
+      const res = createMockResponse();
 
-    expect(res.statusCode).toBe(405);
-    expect(res.body).toEqual({
-      success: false,
-      data: null,
-      error: {
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Only POST requests are allowed.',
-      },
-    });
+      await (handler as unknown as ChatHandler)(req, res);
+
+      expect(res.statusCode).toBe(405);
+      expect(res.body).toEqual({
+        success: false,
+        data: null,
+        error: {
+          code: 'METHOD_NOT_ALLOWED',
+          message: 'Only POST requests are allowed.',
+        },
+      });
+    }
   });
 
   it('validates request body', async () => {
     const req: MockRequest = {
       method: 'POST',
       body: { message: '', history: {} },
+      headers: { 'x-api-key': 'test-api-key' },
+    };
+    const res = createMockResponse();
+
+    await (handler as unknown as ChatHandler)(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      success: false,
+      data: null,
+      error: {
+        code: 'INVALID_INPUT',
+        message: 'Provide a non-empty message and a valid history array (max 50 items).',
+      },
+    });
+    expect(mockedGenerateGeminiReply).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed history items', async () => {
+    const req: MockRequest = {
+      method: 'POST',
+      body: {
+        message: 'Hello',
+        history: [
+          {
+            id: '1',
+            text: 'Previous',
+            sender: 'invalid-sender',
+            createdAt: '2026-03-26T00:00:00Z',
+          },
+        ],
+      },
       headers: { 'x-api-key': 'test-api-key' },
     };
     const res = createMockResponse();

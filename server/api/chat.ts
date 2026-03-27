@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 import { requireApiKey } from '../lib/auth';
 import { GeminiTimeoutError, generateGeminiReply } from '../lib/gemini';
@@ -48,16 +48,73 @@ function readChatRequest(body: unknown): ChatRequest | null {
   };
 }
 
-function runMiddleware(
+function sendInternalError(res: Response): void {
+  const payload: ApiResponse<null> = {
+    success: false,
+    data: null,
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: 'Unable to process your request right now. Please try again shortly.',
+    },
+  };
+
+  res.status(500).json(payload);
+}
+
+async function runMiddleware(
   req: Request,
   res: Response,
-  middleware: (req: Request, res: Response, next: () => void) => void
-): boolean {
-  let shouldContinue = false;
-  middleware(req, res, () => {
-    shouldContinue = true;
+  middleware: (req: Request, res: Response, next: NextFunction) => void | Promise<void>
+): Promise<boolean> {
+  const hasResponseBeenSent = (): boolean => {
+    const candidate = res as Response & {
+      statusCode?: number;
+      body?: unknown;
+    };
+
+    return Boolean(
+      candidate.headersSent || candidate.statusCode !== undefined || candidate.body !== undefined
+    );
+  };
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finalize = (shouldContinue: boolean) => {
+      if (!settled) {
+        settled = true;
+        resolve(shouldContinue);
+      }
+    };
+
+    const next: NextFunction = (error?: unknown) => {
+      if (error) {
+        console.error('Middleware failed:', error);
+        if (!hasResponseBeenSent()) {
+          sendInternalError(res);
+        }
+        finalize(false);
+        return;
+      }
+
+      finalize(true);
+    };
+
+    Promise.resolve()
+      .then(() => middleware(req, res, next))
+      .then(() => {
+        if (!settled) {
+          finalize(!hasResponseBeenSent());
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Middleware threw an error:', error);
+        if (!hasResponseBeenSent()) {
+          sendInternalError(res);
+        }
+        finalize(false);
+      });
   });
-  return shouldContinue;
 }
 
 export default async function handler(req: Request, res: Response): Promise<void> {
@@ -65,11 +122,11 @@ export default async function handler(req: Request, res: Response): Promise<void
     return;
   }
 
-  if (!runMiddleware(req, res, requireApiKey)) {
+  if (!(await runMiddleware(req, res, requireApiKey))) {
     return;
   }
 
-  if (!runMiddleware(req, res, rateLimit)) {
+  if (!(await runMiddleware(req, res, rateLimit))) {
     return;
   }
 
