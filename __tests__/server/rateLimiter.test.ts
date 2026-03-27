@@ -24,18 +24,22 @@ function createMockResponse(): MockResponse {
 }
 
 describe('rateLimit middleware', () => {
-  const originalEnv = {
-    RATE_LIMIT_RPM: process.env.RATE_LIMIT_RPM,
-    RATE_LIMIT_TPM: process.env.RATE_LIMIT_TPM,
-    RATE_LIMIT_RPD: process.env.RATE_LIMIT_RPD,
-  };
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+    resetRateLimiterStateForTests();
+  });
 
   afterEach(() => {
-    process.env.RATE_LIMIT_RPM = originalEnv.RATE_LIMIT_RPM;
-    process.env.RATE_LIMIT_TPM = originalEnv.RATE_LIMIT_TPM;
-    process.env.RATE_LIMIT_RPD = originalEnv.RATE_LIMIT_RPD;
+    process.env = { ...originalEnv };
     resetRateLimiterStateForTests();
     jest.useRealTimers();
+    jest.resetAllMocks();
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   it('returns 429 RATE_LIMIT_EXCEEDED when RPM is exceeded', () => {
@@ -117,5 +121,24 @@ describe('rateLimit middleware', () => {
     const envBlockedRes = createMockResponse();
     (rateLimit as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, envBlockedRes, next);
     expect(envBlockedRes.statusCode).toBe(429);
+  });
+
+  it('handles unserializable request body when estimating token usage', () => {
+    process.env.RATE_LIMIT_RPM = '10';
+    process.env.RATE_LIMIT_TPM = '10';
+    process.env.RATE_LIMIT_RPD = '10';
+
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    const req: MockRequest = { body: circular };
+    const next = jest.fn();
+    const res = createMockResponse();
+
+    expect(() => {
+      (rateLimit as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, res, next);
+    }).not.toThrow();
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBeUndefined();
   });
 });

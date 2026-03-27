@@ -87,7 +87,15 @@ function estimateTokensFromBody(body: unknown): number {
     return explicitCount;
   }
 
-  const serialized = typeof body === 'string' ? body : JSON.stringify(body ?? '');
+  let serialized = '';
+
+  try {
+    serialized = typeof body === 'string' ? body : JSON.stringify(body ?? '');
+  } catch {
+    // Fall back to a minimal cost when body serialization fails.
+    return 1;
+  }
+
   const estimated = Math.ceil(serialized.length / 4);
 
   return Math.max(1, estimated);

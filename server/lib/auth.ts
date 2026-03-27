@@ -37,7 +37,7 @@ export function requireApiKey(req: Request, res: Response, next: NextFunction): 
     return;
   }
 
-  const headerValue = readHeaderString(req, 'x-api-key') ?? '';
+  const headerValue = readHeaderString(req, 'x-api-key')?.trim() ?? '';
 
   if (!headerValue || headerValue !== configuredApiKey) {
     unauthorized(res);

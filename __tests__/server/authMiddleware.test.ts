@@ -1,5 +1,7 @@
 import { requireApiKey } from '../../server/lib/auth';
 
+type NextFunction = () => void;
+
 type MockRequest = {
   headers: Record<string, string | undefined>;
 };
@@ -23,12 +25,16 @@ function createMockResponse(): MockResponse {
   };
 }
 
+function invokeRequireApiKey(req: MockRequest, res: MockResponse, next: NextFunction): void {
+  requireApiKey(req as any, res as any, next);
+}
+
 describe('requireApiKey middleware', () => {
-  const originalApiKey = process.env.API_KEY;
+  const originalEnv = process.env;
 
   afterEach(() => {
-    process.env.API_KEY = originalApiKey;
-    jest.clearAllMocks();
+    process.env = { ...originalEnv };
+    jest.resetAllMocks();
   });
 
   it('returns 401 wrapper when API key header is missing', () => {
@@ -37,7 +43,7 @@ describe('requireApiKey middleware', () => {
     const res = createMockResponse();
     const next = jest.fn();
 
-    (requireApiKey as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, res, next);
+    invokeRequireApiKey(req, res, next);
 
     expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({
@@ -57,7 +63,7 @@ describe('requireApiKey middleware', () => {
     const res = createMockResponse();
     const next = jest.fn();
 
-    (requireApiKey as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, res, next);
+    invokeRequireApiKey(req, res, next);
 
     expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({
@@ -77,7 +83,7 @@ describe('requireApiKey middleware', () => {
     const res = createMockResponse();
     const next = jest.fn();
 
-    (requireApiKey as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, res, next);
+    invokeRequireApiKey(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(res.statusCode).toBeUndefined();
@@ -89,7 +95,7 @@ describe('requireApiKey middleware', () => {
     const res = createMockResponse();
     const next = jest.fn();
 
-    (requireApiKey as unknown as (req: unknown, res: unknown, next: () => void) => void)(req, res, next);
+    invokeRequireApiKey(req, res, next);
 
     expect(res.statusCode).toBe(500);
     expect(res.body).toEqual({
@@ -101,5 +107,17 @@ describe('requireApiKey middleware', () => {
       },
     });
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid API key header with surrounding whitespace', () => {
+    process.env.API_KEY = 'secret';
+    const req: MockRequest = { headers: { 'x-api-key': '  secret  ' } };
+    const res = createMockResponse();
+    const next = jest.fn();
+
+    invokeRequireApiKey(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBeUndefined();
   });
 });
