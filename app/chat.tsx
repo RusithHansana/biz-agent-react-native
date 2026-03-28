@@ -6,6 +6,7 @@ import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted
 import { Appbar, useTheme } from "react-native-paper";
 
 import { ChatBubble } from "../components/ChatBubble";
+import { MessageInput } from "../components/MessageInput";
 import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
 import { sendMessage } from "../services/chatService";
@@ -67,24 +68,22 @@ export default function ChatScreen() {
     [state.messages],
   );
 
-  const onSend = useCallback(
-    async (outgoing: IMessage[] = []) => {
-      if (!outgoing.length || state.isLoading) {
+  const handleSendText = useCallback(
+    async (text: string) => {
+      if (state.isLoading) {
         return;
       }
 
-      const draft = outgoing[0];
-      if (!draft.text?.trim()) {
+      const trimmedText = text.trim();
+      if (!trimmedText) {
         return;
       }
 
       const userMessage: Message = {
-        id: draft._id ? String(draft._id) : createMessageId("user"),
-        text: draft.text,
+        id: createMessageId("user"),
+        text: trimmedText,
         sender: "user",
-        createdAt: draft.createdAt instanceof Date && !isNaN(draft.createdAt.getTime())
-          ? draft.createdAt.toISOString()
-          : new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         status: "pending",
       };
 
@@ -176,7 +175,7 @@ export default function ChatScreen() {
       </Appbar.Header>
       <GiftedChat
         messages={giftedMessages}
-        onSend={onSend}
+        onSend={() => undefined}
         user={{ _id: HUMAN_USER_ID, name: "You" }}
         isTyping={state.isLoading}
         renderBubble={renderBubble}
@@ -184,7 +183,13 @@ export default function ChatScreen() {
         renderAvatar={() => null}
         renderTime={() => null}
         renderDay={() => null}
+        renderInputToolbar={() => null}
         messagesContainerStyle={styles.threadContainer}
+      />
+      <MessageInput
+        onSend={handleSendText}
+        disabled={!state.isConnected}
+        placeholder={state.isConnected ? "Type a message..." : "Waiting for connection..."}
       />
     </View>
   );
