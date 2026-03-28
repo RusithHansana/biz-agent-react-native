@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useMemo, useState } from "react";
-import { Platform, StyleSheet, TextInputKeyPressEventData, View, type NativeSyntheticEvent } from "react-native";
+import { Platform, StyleSheet, TextInputKeyPressEvent, View } from "react-native";
 import { IconButton, TextInput } from "react-native-paper";
 
 import { colors } from "../theme/colors";
@@ -48,19 +48,21 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
     setInputHeight((currentHeight) => (Math.abs(currentHeight - nextHeight) < 1 ? currentHeight : nextHeight));
   }, []);
 
-  const handleKeyPress = useCallback((event: NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean }>) => {
+  const handleKeyPress = useCallback((event: TextInputKeyPressEvent) => {
     if (disabled) {
       return;
     }
 
+    const nativeEvent = event.nativeEvent as TextInputKeyPressEvent["nativeEvent"] & { shiftKey?: boolean };
+
     if (Platform.OS === "web") {
-      if (event.nativeEvent.key === "Enter" && !event.nativeEvent.shiftKey) {
+      if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
         handleSend();
       }
       return;
     }
 
-    if (event.nativeEvent.key === "Enter") {
+    if (nativeEvent.key === "Enter") {
       handleSend();
     }
   }, [disabled, handleSend]);
