@@ -5,7 +5,8 @@
             "src": "api/**/*.ts",
             "use": "@vercel/node",
             "config": {
-                "nodeVersion": "24.x"
+                "nodeVersion": "24.x",
+                "includeFiles": "../data/**"
             }
         }
     ],

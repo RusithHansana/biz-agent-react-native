@@ -16,6 +16,7 @@
   "include": [
     "api/**/*.ts",
     "lib/**/*.ts",
-    "types/**/*.ts"
+    "types/**/*.ts",
+    "../data/**/*.json"
   ]
 }

@@ -2,12 +2,12 @@ import businessProfile from '../../data/businessProfile.json';
 
 function formatServices(): string {
   return businessProfile.services
-    .map((service) => `- ${service.name}: ${service.description} (${service.price})`)
+    .map((service: any) => `- ${service.name}: ${service.description} (${service.price})`)
     .join('\n');
 }
 
 function formatHours(): string {
-  return businessProfile.hours.map((slot) => `- ${slot.day} ${slot.start}-${slot.end}`).join('\n');
+  return businessProfile.hours.map((slot: any) => `- ${slot.day} ${slot.start}-${slot.end}`).join('\n');
 }
 
 export function buildSystemPrompt(): string {

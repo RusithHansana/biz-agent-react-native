@@ -166,7 +166,10 @@ export default function ChatScreen() {
     );
   }, []);
 
-  const renderTypingIndicator = useCallback(() => <TypingIndicator />, []);
+  const renderTypingIndicator = useCallback(
+    () => (state.isLoading ? <TypingIndicator /> : null),
+    [state.isLoading],
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
