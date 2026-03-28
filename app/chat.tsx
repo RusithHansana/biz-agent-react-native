@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import * as Crypto from "expo-crypto";
 import { StyleSheet, View } from "react-native";
-import { GiftedChat, type IMessage } from "react-native-gifted-chat";
+import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted-chat";
 import { Appbar, useTheme } from "react-native-paper";
 
+import { ChatBubble } from "../components/ChatBubble";
+import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
 import { sendMessage } from "../services/chatService";
 import { ADD_MESSAGE, SET_LOADING } from "../state/actions";
@@ -140,6 +142,33 @@ export default function ChatScreen() {
     [dispatch, state.messages, state.isLoading],
   );
 
+  const renderBubble = useCallback((props: BubbleProps<IMessage>) => {
+    const currentMessage = props.currentMessage;
+    const sender = props.position === "right" ? "user" : "bot";
+
+    if (!currentMessage) {
+      return null;
+    }
+
+    const rawTimestamp = currentMessage.createdAt;
+    const timestamp = rawTimestamp instanceof Date ? rawTimestamp : new Date(rawTimestamp ?? Date.now());
+
+    // Only show avatar on the chronologically latest (bottom-most) message in a group
+    // In GiftedChat, nextMessage is the chronologically next (newer) message
+    const isConsecutiveBot = sender === "bot" && props.nextMessage?.user?._id === currentMessage.user?._id;
+
+    return (
+      <ChatBubble
+        sender={sender}
+        message={currentMessage.text ?? ""}
+        timestamp={isNaN(timestamp.getTime()) ? new Date() : timestamp}
+        showAvatar={!isConsecutiveBot}
+      />
+    );
+  }, []);
+
+  const renderTypingIndicator = useCallback(() => <TypingIndicator />, []);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
@@ -150,6 +179,11 @@ export default function ChatScreen() {
         onSend={onSend}
         user={{ _id: HUMAN_USER_ID, name: "You" }}
         isTyping={state.isLoading}
+        renderBubble={renderBubble}
+        renderTypingIndicator={renderTypingIndicator}
+        renderAvatar={() => null}
+        renderTime={() => null}
+        renderDay={() => null}
         messagesContainerStyle={styles.threadContainer}
       />
     </View>
