@@ -5,6 +5,10 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { MessageInput } from "../../components/MessageInput";
 
 describe("MessageInput", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("renders placeholder text", () => {
     render(
       <MessageInput
@@ -71,9 +75,11 @@ describe("MessageInput", () => {
     expect(screen.getByPlaceholderText("Waiting for connection...")).toBeTruthy();
     expect(input.props.editable).toBe(false);
 
+    // changeText should be ignored because the input is disabled
     fireEvent.changeText(input, "Should not send");
     fireEvent.press(sendButton);
 
+    expect(screen.queryByDisplayValue("Should not send")).toBeNull();
     expect(onSend).not.toHaveBeenCalled();
   });
 });

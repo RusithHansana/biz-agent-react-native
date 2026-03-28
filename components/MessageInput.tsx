@@ -39,12 +39,22 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
       return;
     }
 
-    onSend(trimmed);
-    clearDraft();
+    try {
+      onSend(trimmed);
+    } catch (e) {
+      console.error("Error sending message:", e);
+    } finally {
+      clearDraft();
+    }
   }, [clearDraft, disabled, draft, onSend]);
 
   const handleContentSizeChange = useCallback((event: { nativeEvent: { contentSize: { height: number } } }) => {
-    const nextHeight = Math.max(MIN_INPUT_HEIGHT, Math.min(MAX_INPUT_HEIGHT, event.nativeEvent.contentSize.height + INPUT_VERTICAL_PADDING * 2));
+    const h = event.nativeEvent.contentSize.height;
+    if (!Number.isFinite(h)) {
+      return;
+    }
+
+    const nextHeight = Math.max(MIN_INPUT_HEIGHT, Math.min(MAX_INPUT_HEIGHT, h + INPUT_VERTICAL_PADDING * 2));
     setInputHeight((currentHeight) => (Math.abs(currentHeight - nextHeight) < 1 ? currentHeight : nextHeight));
   }, []);
 
@@ -55,17 +65,19 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
 
     const nativeEvent = event.nativeEvent as TextInputKeyPressEvent["nativeEvent"] & { shiftKey?: boolean };
 
-    if (Platform.OS === "web") {
-      if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
-        handleSend();
-      }
-      return;
-    }
-
-    if (nativeEvent.key === "Enter") {
+    if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
       handleSend();
     }
   }, [disabled, handleSend]);
+
+  const handleChangeText = useCallback(
+    (text: string) => {
+      if (!disabled) {
+        setDraft(text);
+      }
+    },
+    [disabled],
+  );
 
   return (
     <View style={styles.wrapper}>
@@ -77,8 +89,10 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           editable={!disabled}
           placeholder={placeholder}
           accessibilityLabel="Message input"
+          accessibilityState={{ disabled }}
+          accessibilityHint={disabled ? placeholder : "Type your message"}
           placeholderTextColor={colors.dark.textTertiary}
-          onChangeText={setDraft}
+          onChangeText={handleChangeText}
           onContentSizeChange={handleContentSizeChange}
           onSubmitEditing={handleSend}
           onKeyPress={handleKeyPress}
@@ -99,6 +113,7 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           style={styles.sendButton}
           disabled={!canSend}
           accessibilityLabel="Send message"
+          accessibilityState={{ disabled: !canSend }}
           onPress={handleSend}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         />
