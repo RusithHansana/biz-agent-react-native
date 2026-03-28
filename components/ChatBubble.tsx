@@ -10,21 +10,26 @@ export interface ChatBubbleProps {
   readonly sender: "user" | "bot";
   readonly message: string;
   readonly timestamp: Date;
+  readonly showAvatar?: boolean;
 }
 
 function formatTimestamp(timestamp: Date): string {
   return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function ChatBubbleComponent({ sender, message, timestamp }: ChatBubbleProps) {
+function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true }: ChatBubbleProps) {
+  if (!message || message.trim().length === 0) {
+    return null;
+  }
+
   const isUser = sender === "user";
 
   return (
     <View style={[styles.wrapper, isUser ? styles.wrapperUser : styles.wrapperBot]}>
       <View style={styles.row}>
         {!isUser ? (
-          <View testID="chat-bubble-bot-avatar" style={styles.avatar}>
-            <Text style={styles.avatarLabel}>AI</Text>
+          <View testID="chat-bubble-bot-avatar" style={[styles.avatar, !showAvatar && styles.avatarHidden]}>
+            <Text style={[styles.avatarLabel, !showAvatar && styles.avatarHidden]}>AI</Text>
           </View>
         ) : null}
 
@@ -73,11 +78,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
   },
+  avatarHidden: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    color: "transparent",
+  },
   bubble: {
     borderRadius: radii.bubble as number,
     paddingHorizontal: spacing["space-3"],
     paddingVertical: spacing["space-2"],
     minHeight: 44,
+    flexShrink: 1,
   },
   userBubble: {
     backgroundColor: colors.dark.userBubble,

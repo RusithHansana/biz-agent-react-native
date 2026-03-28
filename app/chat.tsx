@@ -153,11 +153,16 @@ export default function ChatScreen() {
     const rawTimestamp = currentMessage.createdAt;
     const timestamp = rawTimestamp instanceof Date ? rawTimestamp : new Date(rawTimestamp ?? Date.now());
 
+    // Only show avatar on the chronologically latest (bottom-most) message in a group
+    // In GiftedChat, nextMessage is the chronologically next (newer) message
+    const isConsecutiveBot = sender === "bot" && props.nextMessage?.user?._id === currentMessage.user?._id;
+
     return (
       <ChatBubble
         sender={sender}
         message={currentMessage.text ?? ""}
         timestamp={isNaN(timestamp.getTime()) ? new Date() : timestamp}
+        showAvatar={!isConsecutiveBot}
       />
     );
   }, []);
@@ -176,6 +181,9 @@ export default function ChatScreen() {
         isTyping={state.isLoading}
         renderBubble={renderBubble}
         renderTypingIndicator={renderTypingIndicator}
+        renderAvatar={() => null}
+        renderTime={() => null}
+        renderDay={() => null}
         messagesContainerStyle={styles.threadContainer}
       />
     </View>

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 
@@ -8,35 +8,35 @@ import { radii, spacing } from "../theme/spacing";
 const DOT_COUNT = 3;
 
 function TypingIndicatorComponent() {
-  const dotOpacities = useRef(Array.from({ length: DOT_COUNT }, () => new Animated.Value(0.3))).current;
+  const [dotOpacities] = useState(() => Array.from({ length: DOT_COUNT }, () => new Animated.Value(0.3)));
 
   useEffect(() => {
-    const sequences = dotOpacities.map((value, index) => {
-      const delay = index * 200;
+    const animation = Animated.loop(
+      Animated.stagger(
+        200,
+        dotOpacities.map((value) =>
+          Animated.sequence([
+            Animated.timing(value, {
+              toValue: 1,
+              duration: 250,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(value, {
+              toValue: 0.3,
+              duration: 250,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      )
+    );
 
-      return Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(value, {
-            toValue: 1,
-            duration: 250,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(value, {
-            toValue: 0.3,
-            duration: 250,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-    });
-
-    sequences.forEach((sequence) => sequence.start());
+    animation.start();
 
     return () => {
-      sequences.forEach((sequence) => sequence.stop());
+      animation.stop();
     };
   }, [dotOpacities]);
 
