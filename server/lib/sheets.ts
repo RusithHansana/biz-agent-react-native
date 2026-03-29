@@ -1,3 +1,4 @@
+import { JWT } from 'google-auth-library';
 import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
 
 import type { AppendBookingInput, BookingSlot } from '../types/booking';
@@ -75,12 +76,13 @@ export async function getBookingsSheet(): Promise<GoogleSpreadsheetWorksheet> {
   const sheetId = readSheetId();
   const preferredSheetName = readOptionalSheetName();
 
-  const document = new GoogleSpreadsheet(sheetId, {
-    auth: {
-      client_email: credentials.client_email,
-      private_key: credentials.private_key,
-    },
+  const auth = new JWT({
+    email: credentials.client_email,
+    key: credentials.private_key.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
+
+  const document = new GoogleSpreadsheet(sheetId, auth);
 
   await document.loadInfo();
 
