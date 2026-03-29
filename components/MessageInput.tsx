@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useMemo, useState } from "react";
-import { Platform, StyleSheet, TextInputKeyPressEvent, View } from "react-native";
+import { StyleSheet, TextInputKeyPressEvent, View } from "react-native";
 import { IconButton, TextInput } from "react-native-paper";
 
 import { colors } from "../theme/colors";

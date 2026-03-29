@@ -7,19 +7,22 @@
             "id": "intro-call",
             "name": "Intro Consultation",
             "description": "A 30-minute call to understand your needs.",
-            "price": "$0"
+            "price": "$0",
+            "durationMinutes": 30
         },
         {
             "id": "growth-audit",
             "name": "Growth Audit",
             "description": "Deep dive into your funnel and operations.",
-            "price": "From $150"
+            "price": "From $150",
+            "durationMinutes": 60
         },
         {
             "id": "implementation-sprint",
             "name": "Implementation Sprint",
             "description": "Hands-on delivery support for prioritized growth initiatives.",
-            "price": "$299"
+            "price": "$299",
+            "durationMinutes": 90
         }
     ],
     "hours": [
