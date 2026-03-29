@@ -212,6 +212,11 @@ describe('POST /api/book handler', () => {
         message: 'The requested time slot is already booked.',
       },
     });
+    expect(mockedFindConflict).toHaveBeenCalledWith({
+      date: '2026-03-23',
+      time: '14:00',
+      durationMinutes: 30,
+    });
     expect(mockedAppendBookingRow).not.toHaveBeenCalled();
   });
 
@@ -241,6 +246,11 @@ describe('POST /api/book handler', () => {
         message: 'Unable to save your booking right now. Please try again shortly.',
       },
     });
+    expect(mockedFindConflict).toHaveBeenCalledWith({
+      date: '2026-03-23',
+      time: '14:00',
+      durationMinutes: 30,
+    });
   });
 
   it('returns 200 with booking data on success', async () => {
@@ -261,6 +271,7 @@ describe('POST /api/book handler', () => {
     expect(mockedFindConflict).toHaveBeenCalledWith({
       date: '2026-03-23',
       time: '14:00',
+      durationMinutes: 30,
     });
     expect(mockedAppendBookingRow).toHaveBeenCalledWith({
       name: 'Sarah Jones',
@@ -268,6 +279,7 @@ describe('POST /api/book handler', () => {
       serviceType: 'intro-call',
       date: '2026-03-23',
       time: '14:00',
+      durationMinutes: 30,
     });
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
