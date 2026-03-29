@@ -61,11 +61,21 @@ function readOptionalSheetName(): string | null {
 }
 
 async function ensureHeaderRow(sheet: GoogleSpreadsheetWorksheet): Promise<void> {
-  const headerValues = sheet.headerValues;
+  let headerValues: string[] = [];
+  try {
+    await sheet.loadHeaderRow();
+    headerValues = sheet.headerValues;
+  } catch (error) {
+    // If the sheet is empty, loadHeaderRow throws an error.
+  }
 
   const hasAllHeaders = REQUIRED_HEADERS.every((header, index) => headerValues[index] === header);
   if (hasAllHeaders && headerValues.length >= REQUIRED_HEADERS.length) {
     return;
+  }
+
+  if (sheet.rowCount > 0 && headerValues.length > 0 && !hasAllHeaders) {
+    throw new Error('Sheet exists with data but wrong headers. Please use an empty sheet or correct headers.');
   }
 
   await sheet.setHeaderRow([...REQUIRED_HEADERS]);
@@ -78,7 +88,7 @@ export async function getBookingsSheet(): Promise<GoogleSpreadsheetWorksheet> {
 
   const auth = new JWT({
     email: credentials.client_email,
-    key: credentials.private_key.replace(/\\n/g, '\n'),
+    key: credentials.private_key.replace(/\\n/g, '\n').replace(/"/g, '').trim(),
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 
@@ -95,7 +105,6 @@ export async function getBookingsSheet(): Promise<GoogleSpreadsheetWorksheet> {
     throw new Error('No worksheet available in configured spreadsheet.');
   }
 
-  await selectedSheet.loadHeaderRow();
   await ensureHeaderRow(selectedSheet);
 
   return selectedSheet;
@@ -103,7 +112,12 @@ export async function getBookingsSheet(): Promise<GoogleSpreadsheetWorksheet> {
 
 export async function findConflict(slot: BookingSlot): Promise<boolean> {
   const sheet = await getBookingsSheet();
-  const rows = await sheet.getRows<Record<string, string>>();
+  
+  // Limiting the fetch to the last 1000 rows to avoid catastrophic in-memory load
+  const limit = 1000;
+  const offset = Math.max(0, sheet.rowCount - limit - 1);
+  
+  const rows = await sheet.getRows<Record<string, string>>({ offset, limit });
 
   return rows.some((row) => {
     const date = row.get('Date');
@@ -113,15 +127,30 @@ export async function findConflict(slot: BookingSlot): Promise<boolean> {
 }
 
 export async function appendBookingRow(input: AppendBookingInput): Promise<void> {
-  const sheet = await getBookingsSheet();
+  let attempt = 0;
+  const maxAttempts = 3;
 
-  await sheet.addRow({
-    Timestamp: new Date().toISOString(),
-    Name: input.name,
-    Email: input.email,
-    ServiceType: input.serviceType,
-    Date: input.date,
-    Time: input.time,
-    Status: 'Confirmed',
-  });
+  while (attempt < maxAttempts) {
+    try {
+      const sheet = await getBookingsSheet();
+
+      await sheet.addRow({
+        Timestamp: new Date().toISOString(),
+        Name: input.name,
+        Email: input.email,
+        ServiceType: input.serviceType,
+        Date: input.date,
+        Time: input.time,
+        Status: 'Confirmed',
+      });
+      return;
+    } catch (error) {
+      attempt++;
+      if (attempt >= maxAttempts) {
+        throw error;
+      }
+      // Simple exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+    }
+  }
 }

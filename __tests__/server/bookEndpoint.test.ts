@@ -152,7 +152,7 @@ describe('POST /api/book handler', () => {
       data: null,
       error: {
         code: 'INVALID_INPUT',
-        message: 'Provide valid name, email, serviceType, and ISO-8601 dateTime.',
+        message: 'Provide a valid non-empty name.',
       },
     });
     expect(mockedFindConflict).not.toHaveBeenCalled();

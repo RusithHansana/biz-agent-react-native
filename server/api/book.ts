@@ -15,7 +15,7 @@ type BusinessHourEntry = {
 };
 
 const DAY_KEYS: ReadonlyArray<string> = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const BASIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const BASIC_EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 const ISO_UTC_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 function sendError(res: Response, statusCode: number, code: string, message: string): void {
@@ -53,7 +53,7 @@ async function runMiddleware(
     );
   };
 
-  return new Promise((resolve) => {
+  return new Promise<boolean>((resolve) => {
     let settled = false;
 
     const finalize = (shouldContinue: boolean) => {
@@ -76,20 +76,20 @@ async function runMiddleware(
       finalize(true);
     };
 
-    Promise.resolve()
-      .then(() => middleware(req, res, next))
-      .then(() => {
+    (async () => {
+      try {
+        await middleware(req, res, next);
         if (!settled) {
           finalize(!hasResponseBeenSent());
         }
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         console.error('Middleware threw an error:', error);
         if (!hasResponseBeenSent()) {
           sendInternalError(res);
         }
         finalize(false);
-      });
+      }
+    })();
   });
 }
 
@@ -130,30 +130,50 @@ function isWithinBusinessHours(date: Date): boolean {
     const startMinutes = parseTimeToMinutes(entry.start);
     const endMinutes = parseTimeToMinutes(entry.end);
 
-    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+    if (startMinutes === null || endMinutes === null) {
       return false;
     }
 
-    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    if (startMinutes <= endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    } else {
+      // Crosses midnight
+      return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+    }
   });
 }
 
-function readBookingRequest(body: unknown): BookingRequest | null {
+type ValidationResult<T> = { data: T } | { error: string };
+
+function readBookingRequest(body: unknown): ValidationResult<BookingRequest> {
   const candidate = readJsonObject(body);
   if (!candidate) {
-    return null;
+    return { error: 'Request body must be a valid JSON object.' };
   }
 
   if (!isNonEmptyString(candidate.name)) {
-    return null;
+    return { error: 'Provide a valid non-empty name.' };
   }
 
-  if (!isNonEmptyString(candidate.email) || !BASIC_EMAIL_REGEX.test(candidate.email.trim())) {
-    return null;
+  if (candidate.name.trim().length > 255) {
+    return { error: 'Name must be 255 characters or fewer.' };
+  }
+
+  if (!isNonEmptyString(candidate.email)) {
+    return { error: 'Provide a valid non-empty email address.' };
+  }
+
+  const trimmedEmail = candidate.email.trim();
+  if (!BASIC_EMAIL_REGEX.test(trimmedEmail)) {
+    return { error: 'Provide a valid email format.' };
+  }
+
+  if (trimmedEmail.length > 255) {
+    return { error: 'Email must be 255 characters or fewer.' };
   }
 
   if (!isNonEmptyString(candidate.serviceType)) {
-    return null;
+    return { error: 'Provide a valid non-empty serviceType.' };
   }
 
   const allowedServiceIds = new Set(
@@ -164,23 +184,25 @@ function readBookingRequest(body: unknown): BookingRequest | null {
 
   const normalizedServiceType = candidate.serviceType.trim();
   if (!allowedServiceIds.has(normalizedServiceType)) {
-    return null;
+    return { error: 'The provided serviceType is not recognized.' };
   }
 
   if (!isNonEmptyString(candidate.dateTime) || !ISO_UTC_REGEX.test(candidate.dateTime.trim())) {
-    return null;
+    return { error: 'Provide a valid ISO-8601 dateTime string in UTC.' };
   }
 
   const parsedDate = new Date(candidate.dateTime);
   if (Number.isNaN(parsedDate.getTime())) {
-    return null;
+    return { error: 'The provided dateTime is invalid.' };
   }
 
   return {
-    name: candidate.name.trim(),
-    email: candidate.email.trim(),
-    serviceType: normalizedServiceType,
-    dateTime: candidate.dateTime.trim(),
+    data: {
+      name: candidate.name.trim(),
+      email: trimmedEmail,
+      serviceType: normalizedServiceType,
+      dateTime: candidate.dateTime.trim(),
+    }
   };
 }
 
@@ -197,11 +219,13 @@ export default async function handler(req: Request, res: Response): Promise<void
     return;
   }
 
-  const request = readBookingRequest(req.body);
-  if (!request) {
-    sendError(res, 400, 'INVALID_INPUT', 'Provide valid name, email, serviceType, and ISO-8601 dateTime.');
+  const requestResult = readBookingRequest(req.body);
+  if ('error' in requestResult) {
+    sendError(res, 400, 'INVALID_INPUT', requestResult.error);
     return;
   }
+
+  const request = requestResult.data;
 
   try {
     const requestedDateTime = new Date(request.dateTime);
