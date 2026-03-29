@@ -8,6 +8,28 @@ import { isNonEmptyString, readJsonObject, requirePost } from '../lib/validation
 import type { ApiResponse } from '../types/api';
 import type { BookingRequest, BookingResponseData } from '../types/booking';
 
+const DEFAULT_DURATION_MINUTES = 60;
+
+// Serializes check-then-write within a single serverless instance to prevent
+// concurrent requests from passing the conflict check simultaneously.
+// Note: Does not protect against parallel Vercel instances (acceptable for MVP).
+let bookingLock: Promise<void> = Promise.resolve();
+
+async function withBookingLock<T>(fn: () => Promise<T>): Promise<T> {
+  let release: () => void;
+  const next = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const previous = bookingLock;
+  bookingLock = next;
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    release!();
+  }
+}
+
 type BusinessHourEntry = {
   day: string;
   start: string;
@@ -242,20 +264,31 @@ export default async function handler(req: Request, res: Response): Promise<void
       return;
     }
 
+    const matchedService = businessProfile.services.find(
+      (s) => s.id === request.serviceType
+    );
+    const durationMinutes = matchedService?.durationMinutes ?? DEFAULT_DURATION_MINUTES;
+
     try {
-      const hasConflict = await findConflict({ date, time });
+      const hasConflict = await withBookingLock(async () => {
+        const conflict = await findConflict({ date, time, durationMinutes });
+        if (conflict) return true;
+
+        await appendBookingRow({
+          name: request.name,
+          email: request.email,
+          serviceType: request.serviceType,
+          date,
+          time,
+          durationMinutes,
+        });
+        return false;
+      });
+
       if (hasConflict) {
         sendError(res, 409, 'SLOT_CONFLICT', 'The requested time slot is already booked.');
         return;
       }
-
-      await appendBookingRow({
-        name: request.name,
-        email: request.email,
-        serviceType: request.serviceType,
-        date,
-        time,
-      });
     } catch (error) {
       console.error('Google Sheets booking integration failed:', error);
       sendError(

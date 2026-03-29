@@ -17,6 +17,7 @@ export type BookingResponseData = {
 export type BookingSlot = {
   date: string;
   time: string;
+  durationMinutes: number;
 };
 
 export type AppendBookingInput = {
@@ -25,4 +26,5 @@ export type AppendBookingInput = {
   serviceType: string;
   date: string;
   time: string;
+  durationMinutes: number;
 };

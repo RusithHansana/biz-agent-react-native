@@ -3,7 +3,7 @@ import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadshee
 
 import type { AppendBookingInput, BookingSlot } from '../types/booking';
 
-const REQUIRED_HEADERS = ['Timestamp', 'Name', 'Email', 'ServiceType', 'Date', 'Time', 'Status'] as const;
+const REQUIRED_HEADERS = ['Timestamp', 'Name', 'Email', 'ServiceType', 'Date', 'Time', 'Duration', 'Status'] as const;
 
 type ServiceAccountCredentials = {
   client_email: string;
@@ -110,19 +110,41 @@ export async function getBookingsSheet(): Promise<GoogleSpreadsheetWorksheet> {
   return selectedSheet;
 }
 
+function timeToMinutes(time: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match) return null;
+  return Number.parseInt(match[1], 10) * 60 + Number.parseInt(match[2], 10);
+}
+
+const DEFAULT_DURATION_MINUTES = 60;
+
 export async function findConflict(slot: BookingSlot): Promise<boolean> {
   const sheet = await getBookingsSheet();
-  
+
   // Limiting the fetch to the last 1000 rows to avoid catastrophic in-memory load
   const limit = 1000;
   const offset = Math.max(0, sheet.rowCount - limit - 1);
-  
+
   const rows = await sheet.getRows<Record<string, string>>({ offset, limit });
+
+  const newStart = timeToMinutes(slot.time);
+  if (newStart === null) return false;
+  const newEnd = newStart + slot.durationMinutes;
 
   return rows.some((row) => {
     const date = row.get('Date');
-    const time = row.get('Time');
-    return date === slot.date && time === slot.time;
+    if (date !== slot.date) return false;
+
+    const existingTime = row.get('Time');
+    const existingStart = existingTime ? timeToMinutes(existingTime) : null;
+    if (existingStart === null) return false;
+
+    const rawDuration = row.get('Duration');
+    const existingDuration = rawDuration ? Number.parseInt(rawDuration, 10) : DEFAULT_DURATION_MINUTES;
+    const existingEnd = existingStart + (Number.isNaN(existingDuration) ? DEFAULT_DURATION_MINUTES : existingDuration);
+
+    // Two windows overlap when: startA < endB AND startB < endA
+    return newStart < existingEnd && existingStart < newEnd;
   });
 }
 
@@ -141,6 +163,7 @@ export async function appendBookingRow(input: AppendBookingInput): Promise<void>
         ServiceType: input.serviceType,
         Date: input.date,
         Time: input.time,
+        Duration: String(input.durationMinutes),
         Status: 'Confirmed',
       });
       return;
