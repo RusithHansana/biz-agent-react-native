@@ -9,7 +9,7 @@ export async function sendMessage(text: string, history: Message[]): Promise<Api
     throw new Error("Message text cannot be empty");
   }
 
-  const timeoutMs = 30000;
+  const timeoutMs = 60000;
   let timeoutId: ReturnType<typeof setTimeout>;
 
   const timeoutPromise = new Promise<never>((_, reject) => {

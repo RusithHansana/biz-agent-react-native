@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import * as Crypto from "expo-crypto";
-import { StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted-chat";
 import { Appbar, useTheme } from "react-native-paper";
 
@@ -176,24 +176,30 @@ export default function ChatScreen() {
       <Appbar.Header>
         <Appbar.Content title={businessProfile.name} subtitle="AI Receptionist" />
       </Appbar.Header>
-      <GiftedChat
-        messages={giftedMessages}
-        onSend={() => undefined}
-        user={{ _id: HUMAN_USER_ID, name: "You" }}
-        isTyping={state.isLoading}
-        renderBubble={renderBubble}
-        renderTypingIndicator={renderTypingIndicator}
-        renderAvatar={() => null}
-        renderTime={() => null}
-        renderDay={() => null}
-        renderInputToolbar={() => null}
-        messagesContainerStyle={styles.threadContainer}
-      />
-      <MessageInput
-        onSend={handleSendText}
-        disabled={!state.isConnected}
-        placeholder={state.isConnected ? "Type a message..." : "Waiting for connection..."}
-      />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <GiftedChat
+          messages={giftedMessages}
+          onSend={() => undefined}
+          user={{ _id: HUMAN_USER_ID, name: "You" }}
+          isTyping={state.isLoading}
+          renderBubble={renderBubble}
+          renderTypingIndicator={renderTypingIndicator}
+          renderAvatar={() => null}
+          renderTime={() => null}
+          renderDay={() => null}
+          renderInputToolbar={() => null}
+          messagesContainerStyle={styles.threadContainer}
+        />
+        <MessageInput
+          onSend={handleSendText}
+          disabled={!state.isConnected}
+          placeholder={state.isConnected ? "Type a message..." : "Waiting for connection..."}
+        />
+      </KeyboardAvoidingView>
     </View>
   );
 }
