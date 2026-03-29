@@ -16,7 +16,19 @@ export type ChatRequest = {
   history: Message[];
 };
 
+export type BookingFunctionArgs = {
+  name: string;
+  email: string;
+  serviceType: string;
+  dateTime: string;
+};
+
+export type BookingFunctionCall = {
+  name: 'createBooking';
+  args: BookingFunctionArgs;
+};
+
 export type ChatResponseData = {
   reply: string;
-  functionCall?: Record<string, unknown>;
+  functionCall?: BookingFunctionCall;
 };
