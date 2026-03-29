@@ -19,8 +19,18 @@ const DEFAULT_TIMEOUT_MS = 10000;
 
 const expoExtra = (Constants.expoConfig?.extra ?? {}) as ExpoExtraConfig;
 
+const getValidBaseUrl = (): string => {
+  const rawUrl = expoExtra.apiBaseUrl ?? DEFAULT_BASE_URL;
+  try {
+    return new URL(rawUrl).toString().replace(/\/+$/, "");
+  } catch {
+    console.warn(`[apiClient] Invalid apiBaseUrl format: "${rawUrl}". Falling back to default: "${DEFAULT_BASE_URL}".`);
+    return DEFAULT_BASE_URL.replace(/\/+$/, "");
+  }
+};
+
 export const apiClientConfig: ApiClientConfig = {
-  apiBaseUrl: (expoExtra.apiBaseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ""),
+  apiBaseUrl: getValidBaseUrl(),
   apiKey: expoExtra.apiKey ?? DEFAULT_API_KEY,
   timeoutMs: DEFAULT_TIMEOUT_MS,
 };

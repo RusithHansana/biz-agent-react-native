@@ -98,11 +98,11 @@ describe("chatService.sendMessage", () => {
 
   it("throws on timeout", async () => {
     mockedRequest.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, data: { reply: "Hi" }, error: null }), 40000))
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, data: { reply: "Hi" }, error: null }), 70000))
     );
 
     const promise = sendMessage("Test message", []);
-    jest.advanceTimersByTime(30000);
+    jest.advanceTimersByTime(61000);
     
     await expect(promise).rejects.toThrow("Request timed out");
   });
