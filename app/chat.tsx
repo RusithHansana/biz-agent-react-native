@@ -9,16 +9,41 @@ import { ChatBubble } from "../components/ChatBubble";
 import { MessageInput } from "../components/MessageInput";
 import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
+import { createBooking } from "../services/bookingService";
 import { sendMessage } from "../services/chatService";
 import { ADD_MESSAGE, SET_LOADING } from "../state/actions";
 import { useAppContext } from "../state/AppContext";
+import type { BookingResponseData } from "../types/booking";
 import type { Message } from "../types/message";
 
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
 
-function toGiftedChatMessage(message: Message): IMessage {
+type GiftedMessageWithBooking = IMessage & {
+  bookingData?: BookingResponseData;
+};
+
+function isBookingResponseData(value: unknown): value is BookingResponseData {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.name === "string" && candidate.name.trim() !== "" &&
+    typeof candidate.email === "string" && candidate.email.trim() !== "" &&
+    typeof candidate.serviceType === "string" && candidate.serviceType.trim() !== "" &&
+    typeof candidate.dateTime === "string" && candidate.dateTime.trim() !== "" &&
+    typeof candidate.date === "string" && candidate.date.trim() !== "" &&
+    typeof candidate.time === "string" && candidate.time.trim() !== ""
+  );
+}
+
+function toGiftedChatMessage(message: Message): GiftedMessageWithBooking {
   const parsedDate = new Date(message.createdAt);
+  const metadata = message.metadata;
+  const bookingCandidate = metadata?.booking;
+
   return {
     _id: message.id,
     text: message.text,
@@ -28,11 +53,16 @@ function toGiftedChatMessage(message: Message): IMessage {
       name: message.sender === "user" ? "You" : "AI Receptionist",
     },
     pending: message.status === "pending",
+    bookingData: isBookingResponseData(bookingCandidate) ? bookingCandidate : undefined,
   };
 }
 
 function createMessageId(prefix: "user" | "bot"): string {
   return `${prefix}-${Crypto.randomUUID()}`;
+}
+
+function buildBookingFollowUp(booking: BookingResponseData): string {
+  return `Your booking is confirmed for ${booking.date} at ${booking.time}. We have sent the confirmation to ${booking.email}.`;
 }
 
 export default function ChatScreen() {
@@ -92,8 +122,58 @@ export default function ChatScreen() {
 
       try {
         const response = await sendMessage(userMessage.text, state.messages);
-        
+
         if (!isMounted.current) return;
+
+        if (response.success && response.data?.functionCall?.name === "createBooking") {
+          const args = response.data.functionCall.args;
+          if (!args || !args.name || !args.email || !args.serviceType || !args.dateTime) {
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: "I am missing some required details to complete your booking. Could you please provide them?",
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
+              },
+            });
+            return;
+          }
+
+          const bookingResult = await createBooking(args);
+
+          if (!isMounted.current) return;
+
+          if (bookingResult.success && bookingResult.data) {
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
+                metadata: {
+                  booking: bookingResult.data,
+                },
+              },
+            });
+            return;
+          }
+
+          dispatch({
+            type: ADD_MESSAGE,
+            payload: {
+              id: createMessageId("bot"),
+              text: bookingResult.error?.message || "I could not complete your booking right now. Please try again in a moment.",
+              sender: "bot",
+              createdAt: new Date().toISOString(),
+              status: "sent",
+            },
+          });
+          return;
+        }
 
         if (response.success && response.data?.reply?.trim()) {
           dispatch({
@@ -155,6 +235,7 @@ export default function ChatScreen() {
     // Only show avatar on the chronologically latest (bottom-most) message in a group
     // In GiftedChat, nextMessage is the chronologically next (newer) message
     const isConsecutiveBot = sender === "bot" && props.nextMessage?.user?._id === currentMessage.user?._id;
+    const bookingData = (currentMessage as GiftedMessageWithBooking).bookingData;
 
     return (
       <ChatBubble
@@ -162,6 +243,7 @@ export default function ChatScreen() {
         message={currentMessage.text ?? ""}
         timestamp={isNaN(timestamp.getTime()) ? new Date() : timestamp}
         showAvatar={!isConsecutiveBot}
+        bookingData={bookingData}
       />
     );
   }, []);
