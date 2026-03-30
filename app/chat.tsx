@@ -55,7 +55,7 @@ export default function ChatScreen() {
       type: ADD_MESSAGE,
       payload: {
         id: createMessageId("bot"),
-        text: `Hi, welcome to ${businessProfile.name}. I can help answer questions and book your appointment. What can I help you with today?`,
+        text: `Hello and welcome to ${businessProfile.name}! 👋 I'm here to help with bookings and questions. What's your name so I can assist you better?`,
         sender: "bot",
         createdAt: new Date().toISOString(),
         status: "sent",
