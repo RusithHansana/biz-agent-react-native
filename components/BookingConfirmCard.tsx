@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { Text, useTheme } from "react-native-paper";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
@@ -16,13 +16,11 @@ export type BookingConfirmCardProps = {
 
 export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
   const scale = useSharedValue(0.8);
+  const theme = useTheme();
 
   useEffect(() => {
-    scale.value = withSpring(1, {
-      damping: 13,
-      stiffness: 180,
-      mass: 0.8,
-      overshootClamping: false,
+    scale.value = withTiming(1, {
+      duration: 400,
     });
   }, [scale]);
 
@@ -30,33 +28,48 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
     transform: [{ scale: scale.value }],
   }));
 
+  const a11yLabel = `Booking confirmed. Name: ${booking.name}, Service: ${booking.serviceType}, Date: ${booking.date}, Time: ${booking.time}, Email: ${booking.email}`;
+
   return (
-    <Animated.View testID="booking-confirm-card" style={[styles.card, animatedStyle]}>
+    <Animated.View
+      testID="booking-confirm-card"
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.dark ? colors.dark.successBg : "#D1FAE5", // Emerald 100 for light mode
+          borderColor: theme.dark ? colors.dark.success : "#10B981",
+        },
+        animatedStyle,
+      ]}
+      accessible={true}
+      accessibilityRole="summary"
+      accessibilityLabel={a11yLabel}
+    >
       <View style={styles.headerRow}>
-        <MaterialCommunityIcons name="check-circle" size={20} color={colors.dark.success} />
-        <Text style={styles.headerText}>Booking Confirmed</Text>
+        <MaterialCommunityIcons name="check-circle" size={20} color={theme.dark ? colors.dark.success : "#059669"} />
+        <Text style={[styles.headerText, { color: theme.colors.onSurface }]}>Booking Confirmed</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Name</Text>
-          <Text style={styles.value}>{booking.name}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Name</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.name}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Service</Text>
-          <Text style={styles.value}>{booking.serviceType}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Service</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.serviceType}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Date</Text>
-          <Text style={styles.value}>{booking.date}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Date</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.date}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Time</Text>
-          <Text style={styles.value}>{booking.time}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Time</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.time}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{booking.email}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Email</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.email}</Text>
         </View>
       </View>
     </Animated.View>
@@ -65,8 +78,6 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.dark.successBg,
-    borderColor: colors.dark.success,
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: spacing["space-4"],

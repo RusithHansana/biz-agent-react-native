@@ -5,7 +5,6 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted-chat";
 import { Appbar, useTheme } from "react-native-paper";
 
-import { BookingConfirmCard } from "../components/BookingConfirmCard";
 import { ChatBubble } from "../components/ChatBubble";
 import { MessageInput } from "../components/MessageInput";
 import { TypingIndicator } from "../components/TypingIndicator";
@@ -31,12 +30,12 @@ function isBookingResponseData(value: unknown): value is BookingResponseData {
 
   const candidate = value as Record<string, unknown>;
   return (
-    typeof candidate.name === "string"
-    && typeof candidate.email === "string"
-    && typeof candidate.serviceType === "string"
-    && typeof candidate.dateTime === "string"
-    && typeof candidate.date === "string"
-    && typeof candidate.time === "string"
+    typeof candidate.name === "string" && candidate.name.trim() !== "" &&
+    typeof candidate.email === "string" && candidate.email.trim() !== "" &&
+    typeof candidate.serviceType === "string" && candidate.serviceType.trim() !== "" &&
+    typeof candidate.dateTime === "string" && candidate.dateTime.trim() !== "" &&
+    typeof candidate.date === "string" && candidate.date.trim() !== "" &&
+    typeof candidate.time === "string" && candidate.time.trim() !== ""
   );
 }
 
@@ -127,7 +126,22 @@ export default function ChatScreen() {
         if (!isMounted.current) return;
 
         if (response.success && response.data?.functionCall?.name === "createBooking") {
-          const bookingResult = await createBooking(response.data.functionCall.args);
+          const args = response.data.functionCall.args;
+          if (!args || !args.name || !args.email || !args.serviceType || !args.dateTime) {
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: "I am missing some required details to complete your booking. Could you please provide them?",
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
+              },
+            });
+            return;
+          }
+
+          const bookingResult = await createBooking(args);
 
           if (!isMounted.current) return;
 
@@ -136,24 +150,13 @@ export default function ChatScreen() {
               type: ADD_MESSAGE,
               payload: {
                 id: createMessageId("bot"),
-                text: "",
+                text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
                 sender: "bot",
                 createdAt: new Date().toISOString(),
                 status: "sent",
                 metadata: {
                   booking: bookingResult.data,
                 },
-              },
-            });
-
-            dispatch({
-              type: ADD_MESSAGE,
-              payload: {
-                id: createMessageId("bot"),
-                text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
-                sender: "bot",
-                createdAt: new Date().toISOString(),
-                status: "sent",
               },
             });
             return;
@@ -232,6 +235,7 @@ export default function ChatScreen() {
     // Only show avatar on the chronologically latest (bottom-most) message in a group
     // In GiftedChat, nextMessage is the chronologically next (newer) message
     const isConsecutiveBot = sender === "bot" && props.nextMessage?.user?._id === currentMessage.user?._id;
+    const bookingData = (currentMessage as GiftedMessageWithBooking).bookingData;
 
     return (
       <ChatBubble
@@ -239,6 +243,7 @@ export default function ChatScreen() {
         message={currentMessage.text ?? ""}
         timestamp={isNaN(timestamp.getTime()) ? new Date() : timestamp}
         showAvatar={!isConsecutiveBot}
+        bookingData={bookingData}
       />
     );
   }, []);
@@ -247,15 +252,6 @@ export default function ChatScreen() {
     () => (state.isLoading ? <TypingIndicator /> : null),
     [state.isLoading],
   );
-
-  const renderCustomView = useCallback((props: { currentMessage?: IMessage }) => {
-    const bookingData = (props.currentMessage as GiftedMessageWithBooking | undefined)?.bookingData;
-    if (!bookingData) {
-      return null;
-    }
-
-    return <BookingConfirmCard booking={bookingData} />;
-  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -274,7 +270,6 @@ export default function ChatScreen() {
           isTyping={state.isLoading}
           renderBubble={renderBubble}
           renderTypingIndicator={renderTypingIndicator}
-          renderCustomView={renderCustomView}
           renderAvatar={() => null}
           renderTime={() => null}
           renderDay={() => null}

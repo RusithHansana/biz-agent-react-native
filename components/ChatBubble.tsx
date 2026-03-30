@@ -5,20 +5,25 @@ import { Text } from "react-native-paper";
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
+import type { BookingResponseData } from "../types/booking";
+import { BookingConfirmCard } from "./BookingConfirmCard";
 
 export interface ChatBubbleProps {
   readonly sender: "user" | "bot";
   readonly message: string;
   readonly timestamp: Date;
   readonly showAvatar?: boolean;
+  readonly bookingData?: BookingResponseData;
 }
 
 function formatTimestamp(timestamp: Date): string {
   return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true }: ChatBubbleProps) {
-  if (!message || message.trim().length === 0) {
+function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bookingData }: ChatBubbleProps) {
+  const hasText = message && message.trim().length > 0;
+  
+  if (!hasText && !bookingData) {
     return null;
   }
 
@@ -33,9 +38,19 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true }: 
           </View>
         ) : null}
 
-        <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{message}</Text>
-          <Text style={styles.timestampText}>{formatTimestamp(timestamp)}</Text>
+        <View style={styles.contentColumn}>
+          {bookingData && (
+            <View style={styles.cardContainer}>
+              <BookingConfirmCard booking={bookingData} />
+            </View>
+          )}
+
+          {hasText && (
+            <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{message}</Text>
+              <Text style={styles.timestampText}>{formatTimestamp(timestamp)}</Text>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -60,6 +75,16 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: spacing["space-2"],
     maxWidth: "92%",
+  },
+  contentColumn: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    flexShrink: 1,
+    width: "100%",
+  },
+  cardContainer: {
+    marginBottom: spacing["space-1"],
+    width: "100%",
   },
   avatar: {
     width: 28,

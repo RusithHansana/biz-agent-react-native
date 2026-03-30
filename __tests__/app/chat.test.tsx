@@ -73,11 +73,13 @@ const mockDispatch = jest.fn();
 
 const mockedUseAppContext = useAppContext as jest.MockedFunction<typeof useAppContext>;
 const mockedCreateBooking = createBooking as jest.MockedFunction<typeof createBooking>;
+const mockedSendMessage = require("../../services/chatService").sendMessage as jest.Mock;
 
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
     mockDispatch.mockReset();
     mockedCreateBooking.mockReset();
+    mockedSendMessage.mockReset();
     mockedUseAppContext.mockReturnValue({
       state: {
         messages: [],
@@ -128,7 +130,13 @@ describe("ChatScreen booking integration", () => {
     fireEvent.press(screen.getByLabelText("send-booking"));
 
     await waitFor(() => {
-      expect(mockedCreateBooking).toHaveBeenCalledWith(functionCall?.args);
+      expect(mockedCreateBooking).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Jane Doe",
+          email: "jane@example.com",
+          serviceType: "intro-call",
+        })
+      );
     });
   });
 });
