@@ -8,17 +8,25 @@ type GeminiContent = {
   parts: Array<{ text: string }>;
 };
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
-const parsedTimeout = Number(process.env.GEMINI_TIMEOUT_MS);
-const DEFAULT_TIMEOUT_MS = Number.isNaN(parsedTimeout) || parsedTimeout <= 0 ? 15000 : parsedTimeout;
 const BOOKING_FUNCTION_NAME = 'createBooking';
-const ISO_UTC_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+const ISO_UTC_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 
-const SERVICE_IDS = businessProfile.services
-  .map((service) => (typeof service.id === 'string' ? service.id.trim() : ''))
-  .filter((serviceId): serviceId is string => serviceId.length > 0);
+function getServices(): string[] {
+  if (!businessProfile || !Array.isArray(businessProfile.services)) {
+    return [];
+  }
+  return businessProfile.services
+    .map((service) => (typeof service.id === 'string' ? service.id.trim() : ''))
+    .filter((serviceId): serviceId is string => serviceId.length > 0);
+}
 
+const SERVICE_IDS = getServices();
 const ALLOWED_SERVICE_IDS = new Set(SERVICE_IDS);
+
+function getTimeoutMs(): number {
+  const parsedTimeout = Number(process.env.GEMINI_TIMEOUT_MS);
+  return Number.isNaN(parsedTimeout) || parsedTimeout <= 0 ? 15000 : parsedTimeout;
+}
 
 export class GeminiTimeoutError extends Error {
   constructor(message = 'Gemini request timed out') {
@@ -39,7 +47,7 @@ function createClient(): GoogleGenAI {
   const location = process.env.GOOGLE_CLOUD_LOCATION;
 
   if (!serviceAccountKey || !project || !location) {
-    throw new Error('Gemini credentials are not configured.');
+    throw new Error('Gemini credentials are not configured. Set GEMINI_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY.');
   }
 
   let credentials: Record<string, unknown>;
@@ -80,7 +88,7 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function isBookingFunctionArgs(value: unknown): value is BookingFunctionArgs {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
 
@@ -99,11 +107,17 @@ function isBookingFunctionArgs(value: unknown): value is BookingFunctionArgs {
     return false;
   }
 
-  return ISO_UTC_REGEX.test(candidate.dateTime.trim());
+  const dateTimeStr = candidate.dateTime.trim();
+  if (!ISO_UTC_REGEX.test(dateTimeStr)) {
+    return false;
+  }
+
+  const dateObj = new Date(dateTimeStr);
+  return !Number.isNaN(dateObj.getTime());
 }
 
 function readValidatedFunctionCall(value: unknown): BookingFunctionCall | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return undefined;
   }
 
@@ -131,7 +145,9 @@ export async function generateGeminiReply(input: {
 }): Promise<ChatResponseData> {
   const ai = createClient();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeoutMs = getTimeoutMs();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const modelName = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 
   const contents: GeminiContent[] = [
     ...input.history.map(mapMessageToContent),
@@ -140,7 +156,7 @@ export async function generateGeminiReply(input: {
 
   try {
     const response = await ai.models.generateContent({
-      model: DEFAULT_MODEL,
+      model: modelName,
       contents,
       config: {
         systemInstruction: input.systemPrompt,
@@ -188,7 +204,17 @@ export async function generateGeminiReply(input: {
       throw new Error('Gemini returned an empty response.');
     }
 
-    const functionCall = readValidatedFunctionCall(response.functionCalls?.[0]);
+    let functionCall: BookingFunctionCall | undefined;
+
+    if (Array.isArray(response.functionCalls)) {
+      for (const call of response.functionCalls) {
+        const validated = readValidatedFunctionCall(call);
+        if (validated) {
+          functionCall = validated;
+          break;
+        }
+      }
+    }
 
     return {
       reply,

@@ -18,17 +18,15 @@ describe('generateGeminiReply function calling', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    process.env = {
-      ...originalEnv,
-      GEMINI_API_KEY: 'test-key',
-      GEMINI_MODEL: 'gemini-2.5-flash',
-      GEMINI_TIMEOUT_MS: '15000',
-    };
+    process.env = { ...originalEnv };
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_MODEL = 'gemini-2.5-flash';
+    process.env.GEMINI_TIMEOUT_MS = '15000';
     jest.clearAllMocks();
   });
 
   afterEach(() => {
-    process.env = { ...originalEnv };
+    process.env = originalEnv;
   });
 
   afterAll(() => {
@@ -166,5 +164,95 @@ describe('generateGeminiReply function calling', () => {
     });
 
     expect(result.functionCall).toBeUndefined();
+  });
+
+  it('omits createBooking calls with invalid dates or invalid service types', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      text: 'Bad date.',
+      functionCalls: [
+        {
+          name: 'createBooking',
+          args: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            serviceType: 'intro-call',
+            dateTime: '2026-99-99T25:00:00Z', // invalid date
+          },
+        },
+      ],
+    });
+
+    const result1 = await generateGeminiReply({
+      message: 'Confirm booking',
+      history: [],
+      systemPrompt: 'system prompt',
+    });
+
+    expect(result1.functionCall).toBeUndefined();
+
+    mockGenerateContent.mockResolvedValueOnce({
+      text: 'Bad service.',
+      functionCalls: [
+        {
+          name: 'createBooking',
+          args: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            serviceType: 'non-existent-service', // invalid service
+            dateTime: '2026-03-30T09:00:00Z',
+          },
+        },
+      ],
+    });
+
+    const result2 = await generateGeminiReply({
+      message: 'Confirm booking',
+      history: [],
+      systemPrompt: 'system prompt',
+    });
+
+    expect(result2.functionCall).toBeUndefined();
+  });
+
+  it('selects the first valid function call if multiple are returned', async () => {
+    mockGenerateContent.mockResolvedValue({
+      text: 'I will book that.',
+      functionCalls: [
+        {
+          name: 'createBooking',
+          args: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            serviceType: 'intro-call',
+            dateTime: '2026-99-99T25:00:00Z', // invalid
+          },
+        },
+        {
+          name: 'createBooking',
+          args: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            serviceType: 'intro-call',
+            dateTime: '2026-03-30T09:00:00.123Z', // valid
+          },
+        },
+      ],
+    });
+
+    const result = await generateGeminiReply({
+      message: 'Confirm booking',
+      history: [],
+      systemPrompt: 'system prompt',
+    });
+
+    expect(result.functionCall).toEqual({
+      name: 'createBooking',
+      args: {
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        serviceType: 'intro-call',
+        dateTime: '2026-03-30T09:00:00.123Z',
+      },
+    });
   });
 });
