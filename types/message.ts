@@ -11,9 +11,4 @@ export type Message = {
   metadata?: Record<string, unknown>;
 };
 
-export type BookingData = {
-  name: string;
-  email: string;
-  serviceType: string;
-  dateTime: string;
-};
+export type { BookingData } from "./booking";

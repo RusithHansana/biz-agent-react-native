@@ -5,20 +5,46 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted-chat";
 import { Appbar, useTheme } from "react-native-paper";
 
+import { BookingConfirmCard } from "../components/BookingConfirmCard";
 import { ChatBubble } from "../components/ChatBubble";
 import { MessageInput } from "../components/MessageInput";
 import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
+import { createBooking } from "../services/bookingService";
 import { sendMessage } from "../services/chatService";
 import { ADD_MESSAGE, SET_LOADING } from "../state/actions";
 import { useAppContext } from "../state/AppContext";
+import type { BookingResponseData } from "../types/booking";
 import type { Message } from "../types/message";
 
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
 
-function toGiftedChatMessage(message: Message): IMessage {
+type GiftedMessageWithBooking = IMessage & {
+  bookingData?: BookingResponseData;
+};
+
+function isBookingResponseData(value: unknown): value is BookingResponseData {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.name === "string"
+    && typeof candidate.email === "string"
+    && typeof candidate.serviceType === "string"
+    && typeof candidate.dateTime === "string"
+    && typeof candidate.date === "string"
+    && typeof candidate.time === "string"
+  );
+}
+
+function toGiftedChatMessage(message: Message): GiftedMessageWithBooking {
   const parsedDate = new Date(message.createdAt);
+  const metadata = message.metadata;
+  const bookingCandidate = metadata?.booking;
+
   return {
     _id: message.id,
     text: message.text,
@@ -28,11 +54,16 @@ function toGiftedChatMessage(message: Message): IMessage {
       name: message.sender === "user" ? "You" : "AI Receptionist",
     },
     pending: message.status === "pending",
+    bookingData: isBookingResponseData(bookingCandidate) ? bookingCandidate : undefined,
   };
 }
 
 function createMessageId(prefix: "user" | "bot"): string {
   return `${prefix}-${Crypto.randomUUID()}`;
+}
+
+function buildBookingFollowUp(booking: BookingResponseData): string {
+  return `Your booking is confirmed for ${booking.date} at ${booking.time}. We have sent the confirmation to ${booking.email}.`;
 }
 
 export default function ChatScreen() {
@@ -92,8 +123,54 @@ export default function ChatScreen() {
 
       try {
         const response = await sendMessage(userMessage.text, state.messages);
-        
+
         if (!isMounted.current) return;
+
+        if (response.success && response.data?.functionCall?.name === "createBooking") {
+          const bookingResult = await createBooking(response.data.functionCall.args);
+
+          if (!isMounted.current) return;
+
+          if (bookingResult.success && bookingResult.data) {
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: "",
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
+                metadata: {
+                  booking: bookingResult.data,
+                },
+              },
+            });
+
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
+              },
+            });
+            return;
+          }
+
+          dispatch({
+            type: ADD_MESSAGE,
+            payload: {
+              id: createMessageId("bot"),
+              text: bookingResult.error?.message || "I could not complete your booking right now. Please try again in a moment.",
+              sender: "bot",
+              createdAt: new Date().toISOString(),
+              status: "sent",
+            },
+          });
+          return;
+        }
 
         if (response.success && response.data?.reply?.trim()) {
           dispatch({
@@ -171,6 +248,15 @@ export default function ChatScreen() {
     [state.isLoading],
   );
 
+  const renderCustomView = useCallback((props: { currentMessage?: IMessage }) => {
+    const bookingData = (props.currentMessage as GiftedMessageWithBooking | undefined)?.bookingData;
+    if (!bookingData) {
+      return null;
+    }
+
+    return <BookingConfirmCard booking={bookingData} />;
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
@@ -188,6 +274,7 @@ export default function ChatScreen() {
           isTyping={state.isLoading}
           renderBubble={renderBubble}
           renderTypingIndicator={renderTypingIndicator}
+          renderCustomView={renderCustomView}
           renderAvatar={() => null}
           renderTime={() => null}
           renderDay={() => null}
