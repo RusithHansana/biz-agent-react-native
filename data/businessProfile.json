@@ -2,6 +2,7 @@
     "name": "Northbridge Consulting",
     "tagline": "Practical strategy for growing teams",
     "location": "Colombo, Sri Lanka",
+    "timezone": "Asia/Colombo",
     "services": [
         {
             "id": "intro-call",
