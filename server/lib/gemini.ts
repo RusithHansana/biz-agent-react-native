@@ -198,12 +198,9 @@ export async function generateGeminiReply(input: {
       },
     });
 
-    const reply = response.text?.trim();
-
-    if (!reply) {
-      throw new Error('Gemini returned an empty response.');
-    }
-
+    // Extract function calls FIRST — Gemini may respond with ONLY a function
+    // call (no text parts) when the user confirms a booking. Checking text
+    // before function calls caused false "empty response" errors.
     let functionCall: BookingFunctionCall | undefined;
 
     if (Array.isArray(response.functionCalls)) {
@@ -214,6 +211,27 @@ export async function generateGeminiReply(input: {
           break;
         }
       }
+    }
+
+    // response.text may log a warning when non-text parts exist; read safely.
+    let reply: string;
+    try {
+      reply = response.text?.trim() ?? '';
+    } catch {
+      // The SDK can throw when the response contains only function calls
+      // and no text parts. This is expected behaviour during booking confirmation.
+      reply = '';
+    }
+
+    // If we have neither text nor a valid function call, the response is truly empty.
+    if (!reply && !functionCall) {
+      throw new Error('Gemini returned an empty response.');
+    }
+
+    // When Gemini returns only a function call with no accompanying text,
+    // provide a brief confirmation so the client always has a message to display.
+    if (!reply && functionCall) {
+      reply = "Great, I'm processing your booking now!";
     }
 
     return {
