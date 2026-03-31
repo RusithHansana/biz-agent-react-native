@@ -38,7 +38,7 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
           </View>
         ) : null}
 
-        <View style={styles.contentColumn}>
+        <View style={[styles.contentColumn, isUser ? styles.contentColumnUser : styles.contentColumnBot]}>
           {bookingData && (
             <View style={styles.cardContainer}>
               <BookingConfirmCard booking={bookingData} />
@@ -78,9 +78,14 @@ const styles = StyleSheet.create({
   },
   contentColumn: {
     flexDirection: "column",
-    alignItems: "flex-start",
     flexShrink: 1,
     width: "100%",
+  },
+  contentColumnUser: {
+    alignItems: "flex-end",
+  },
+  contentColumnBot: {
+    alignItems: "flex-start",
   },
   cardContainer: {
     marginBottom: spacing["space-1"],
