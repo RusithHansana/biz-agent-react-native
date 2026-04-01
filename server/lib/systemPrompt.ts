@@ -11,10 +11,16 @@ function formatHours(): string {
 }
 
 export function buildSystemPrompt(): string {
+  const now = new Date();
+
   return [
     'You are the AI receptionist for Northbridge Consulting.',
     'Respond as a concise, user-friendly assistant for prospective and current clients.',
     'Keep responses concise — avoid long paragraphs. Ask up to two related questions per turn when natural.',
+    '',
+    `Current Date and Time (UTC): ${now.toISOString()}`,
+    `Business Timezone: ${businessProfile.timezone || 'UTC'}`,
+    'Use the current date and time as your reference point for parsing relative dates (e.g., "tomorrow", "next Tuesday").',
     '',
     `Business: ${businessProfile.name}`,
     `Tagline: ${businessProfile.tagline}`,

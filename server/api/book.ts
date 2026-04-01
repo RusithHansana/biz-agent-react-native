@@ -131,17 +131,69 @@ function parseTimeToMinutes(value: string): number | null {
   return hours * 60 + minutes;
 }
 
-function formatUtcDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+function getBusinessTimezone(): string {
+  const tz = (businessProfile as Record<string, unknown>).timezone;
+  return typeof tz === 'string' && tz.trim().length > 0 ? tz.trim() : 'UTC';
 }
 
-function formatUtcTime(date: Date): string {
-  return date.toISOString().slice(11, 16);
+/**
+ * Converts a UTC Date to { day, hours, minutes, dateStr, timeStr } in the
+ * business's local timezone using Intl (no external deps).
+ */
+function toBusinessLocal(date: Date): {
+  dayIndex: number;
+  hours: number;
+  minutes: number;
+  dateStr: string;
+  timeStr: string;
+} {
+  const tz = getBusinessTimezone();
+
+  // Extract individual components in the business timezone
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    weekday: 'short',
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((p) => p.type === type)?.value ?? '';
+
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hours = Number.parseInt(get('hour'), 10);
+  const minutes = Number.parseInt(get('minute'), 10);
+  const weekday = get('weekday'); // "Mon", "Tue", etc.
+
+  const dayIndex = DAY_KEYS.indexOf(weekday);
+
+  return {
+    dayIndex,
+    hours,
+    minutes,
+    dateStr: `${year}-${month}-${day}`,
+    timeStr: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+  };
+}
+
+function formatLocalDate(date: Date): string {
+  return toBusinessLocal(date).dateStr;
+}
+
+function formatLocalTime(date: Date): string {
+  return toBusinessLocal(date).timeStr;
 }
 
 function isWithinBusinessHours(date: Date): boolean {
-  const dayKey = DAY_KEYS[date.getUTCDay()];
-  const currentMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+  const local = toBusinessLocal(date);
+  const dayKey = DAY_KEYS[local.dayIndex];
+  const currentMinutes = local.hours * 60 + local.minutes;
 
   const entries = (businessProfile.hours as BusinessHourEntry[]).filter((entry) => entry.day === dayKey);
   if (entries.length === 0) {
@@ -251,8 +303,8 @@ export default async function handler(req: Request, res: Response): Promise<void
 
   try {
     const requestedDateTime = new Date(request.dateTime);
-    const date = formatUtcDate(requestedDateTime);
-    const time = formatUtcTime(requestedDateTime);
+    const date = formatLocalDate(requestedDateTime);
+    const time = formatLocalTime(requestedDateTime);
 
     if (!isWithinBusinessHours(requestedDateTime)) {
       sendError(
