@@ -39,16 +39,16 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
         ) : null}
 
         <View style={[styles.contentColumn, isUser ? styles.contentColumnUser : styles.contentColumnBot]}>
-          {bookingData && (
-            <View style={styles.cardContainer}>
-              <BookingConfirmCard booking={bookingData} />
+          {hasText && (
+            <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble, bookingData ? { marginBottom: spacing["space-2"] } : undefined]}>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{message}</Text>
+              <Text style={styles.timestampText}>{formatTimestamp(timestamp)}</Text>
             </View>
           )}
 
-          {hasText && (
-            <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-              <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{message}</Text>
-              <Text style={styles.timestampText}>{formatTimestamp(timestamp)}</Text>
+          {bookingData && (
+            <View style={styles.cardContainer}>
+              <BookingConfirmCard booking={bookingData} />
             </View>
           )}
         </View>
