@@ -6,6 +6,7 @@ import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted
 import { Appbar, useTheme } from "react-native-paper";
 
 import { ChatBubble } from "../components/ChatBubble";
+import { ConnectionBanner } from "../components/ConnectionBanner";
 import { MessageInput } from "../components/MessageInput";
 import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
@@ -258,6 +259,7 @@ export default function ChatScreen() {
       <Appbar.Header>
         <Appbar.Content title={businessProfile.name} subtitle="AI Receptionist" />
       </Appbar.Header>
+      <ConnectionBanner isConnected={state.isConnected} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
