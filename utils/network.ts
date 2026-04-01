@@ -22,12 +22,12 @@ function resolveConnectedState(state: NetInfoState, lastKnownConnected: boolean)
   return lastKnownConnected;
 }
 
-export function subscribeToNetworkStatus(onChange: NetworkStatusChangeHandler): () => void {
-  let lastKnownConnected = true;
+let globalLastKnownConnected = true;
 
+export function subscribeToNetworkStatus(onChange: NetworkStatusChangeHandler): () => void {
   return NetInfo.addEventListener((state) => {
-    const isConnected = resolveConnectedState(state, lastKnownConnected);
-    lastKnownConnected = isConnected;
+    const isConnected = resolveConnectedState(state, globalLastKnownConnected);
+    globalLastKnownConnected = isConnected;
     onChange(isConnected, state.isInternetReachable);
   });
 }
