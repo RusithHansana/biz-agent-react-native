@@ -4,7 +4,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import ChatScreen from "../../app/chat";
 import { createBooking } from "../../services/bookingService";
+import { ADD_PENDING_BOOKING } from "../../state/actions";
 import { useAppContext } from "../../state/AppContext";
+import { addPendingBooking } from "../../utils/storage";
 
 import type { ChatResponseData } from "../../types/chat";
 
@@ -65,6 +67,10 @@ jest.mock("../../services/bookingService", () => ({
   createBooking: jest.fn(),
 }));
 
+jest.mock("../../utils/storage", () => ({
+  addPendingBooking: jest.fn(),
+}));
+
 jest.mock("../../state/AppContext", () => ({
   useAppContext: jest.fn(),
 }));
@@ -73,12 +79,14 @@ const mockDispatch = jest.fn();
 
 const mockedUseAppContext = useAppContext as jest.MockedFunction<typeof useAppContext>;
 const mockedCreateBooking = createBooking as jest.MockedFunction<typeof createBooking>;
+const mockedAddPendingBooking = addPendingBooking as jest.MockedFunction<typeof addPendingBooking>;
 const mockedSendMessage = require("../../services/chatService").sendMessage as jest.Mock;
 
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
     mockDispatch.mockReset();
     mockedCreateBooking.mockReset();
+    mockedAddPendingBooking.mockReset();
     mockedSendMessage.mockReset();
     mockedUseAppContext.mockReturnValue({
       state: {
@@ -136,6 +144,61 @@ describe("ChatScreen booking integration", () => {
           email: "jane@example.com",
           serviceType: "intro-call",
         })
+      );
+    });
+  });
+
+  it("persists pending booking and dispatches fallback message for SHEET_WRITE_FAILED", async () => {
+    const { sendMessage } = jest.requireMock("../../services/chatService") as {
+      sendMessage: jest.Mock;
+    };
+
+    const functionCall: ChatResponseData["functionCall"] = {
+      name: "createBooking",
+      args: {
+        name: "Jane Doe",
+        email: "jane@example.com",
+        serviceType: "intro-call",
+        dateTime: "2026-03-31T10:00:00Z",
+      },
+    };
+
+    sendMessage.mockResolvedValue({
+      success: true,
+      data: {
+        reply: "Perfect. I can book that now.",
+        functionCall,
+      },
+      error: null,
+    });
+
+    mockedCreateBooking.mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        code: "SHEET_WRITE_FAILED",
+        message: "Unable to write booking",
+      },
+    });
+
+    mockedAddPendingBooking.mockResolvedValue([functionCall.args]);
+
+    render(<ChatScreen />);
+
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      expect(mockedAddPendingBooking).toHaveBeenCalledWith(functionCall.args);
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: ADD_PENDING_BOOKING,
+        payload: functionCall.args,
+      });
+      expect(mockDispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            text: "I'm sorry, I wasn't able to save your appointment right now, but I've noted the details and will try again shortly.",
+          }),
+        }),
       );
     });
   });

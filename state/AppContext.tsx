@@ -1,9 +1,11 @@
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 
+import { createBooking } from "../services/bookingService";
 import { subscribeToNetworkStatus } from "../utils/network";
+import { loadPendingBookings, removePendingBooking } from "../utils/storage";
 import type { AppAction } from "./actions";
-import { SET_CONNECTION_STATUS } from "./actions";
+import { ADD_PENDING_BOOKING, REMOVE_PENDING_BOOKING, SET_CONNECTION_STATUS } from "./actions";
 import { appReducer, initialState, type AppState } from "./appReducer";
 
 type AppContextValue = {
@@ -16,6 +18,7 @@ export const AppContext = createContext<AppContextValue | undefined>(undefined);
 export function AppProvider({ children }: PropsWithChildren) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const lastConnectionStateRef = useRef(state.isConnected);
+  const bootRetryStartedRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToNetworkStatus((isConnected) => {
@@ -28,6 +31,59 @@ export function AppProvider({ children }: PropsWithChildren) {
     });
 
     return unsubscribe;
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (bootRetryStartedRef.current) {
+      return;
+    }
+
+    bootRetryStartedRef.current = true;
+    let cancelled = false;
+
+    const runPendingBookingRetry = async () => {
+      const pendingBookings = await loadPendingBookings();
+      if (cancelled) {
+        return;
+      }
+
+      for (const booking of pendingBookings) {
+        dispatch({ type: ADD_PENDING_BOOKING, payload: booking });
+      }
+
+      for (const booking of pendingBookings) {
+        const result = await createBooking(booking);
+        if (cancelled) {
+          return;
+        }
+
+        if (!result.success) {
+          continue;
+        }
+
+        await removePendingBooking({
+          email: booking.email,
+          dateTime: booking.dateTime,
+        });
+        if (cancelled) {
+          return;
+        }
+
+        dispatch({
+          type: REMOVE_PENDING_BOOKING,
+          payload: {
+            email: booking.email,
+            dateTime: booking.dateTime,
+          },
+        });
+      }
+    };
+
+    void runPendingBookingRetry();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch]);
 
   const value = useMemo(

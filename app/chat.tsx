@@ -12,13 +12,15 @@ import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
 import { createBooking } from "../services/bookingService";
 import { sendMessage } from "../services/chatService";
-import { ADD_MESSAGE, SET_LOADING } from "../state/actions";
+import { ADD_MESSAGE, ADD_PENDING_BOOKING, SET_LOADING } from "../state/actions";
 import { useAppContext } from "../state/AppContext";
 import type { BookingResponseData } from "../types/booking";
 import type { Message } from "../types/message";
+import { addPendingBooking } from "../utils/storage";
 
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
+const BOOKING_PERSISTENCE_FALLBACK_MESSAGE = "I'm sorry, I wasn't able to save your appointment right now, but I've noted the details and will try again shortly.";
 
 type GiftedMessageWithBooking = IMessage & {
   bookingData?: BookingResponseData;
@@ -158,6 +160,29 @@ export default function ChatScreen() {
                 metadata: {
                   booking: bookingResult.data,
                 },
+              },
+            });
+            return;
+          }
+
+          if (bookingResult.error?.code === "SHEET_WRITE_FAILED") {
+            await addPendingBooking(args);
+
+            if (!isMounted.current) return;
+
+            dispatch({
+              type: ADD_PENDING_BOOKING,
+              payload: args,
+            });
+
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId("bot"),
+                text: BOOKING_PERSISTENCE_FALLBACK_MESSAGE,
+                sender: "bot",
+                createdAt: new Date().toISOString(),
+                status: "sent",
               },
             });
             return;
