@@ -86,6 +86,64 @@ export function AppProvider({ children }: PropsWithChildren) {
     };
   }, [dispatch]);
 
+  const isRetryingRef = useRef(false);
+  const wasOfflineRef = useRef(!state.isConnected);
+  const pendingBookingsRef = useRef(state.pendingBookings);
+  pendingBookingsRef.current = state.pendingBookings;
+
+  useEffect(() => {
+    const justReconnected = state.isConnected && wasOfflineRef.current;
+    wasOfflineRef.current = !state.isConnected;
+
+    if (!justReconnected || pendingBookingsRef.current.length === 0 || isRetryingRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+    isRetryingRef.current = true;
+
+    const runReconnectionRetry = async () => {
+      // Snapshot current bookings to iterate safely
+      const bookingsToRetry = [...pendingBookingsRef.current];
+
+      for (const booking of bookingsToRetry) {
+        if (cancelled) break;
+
+        try {
+          const result = await createBooking(booking);
+          if (cancelled) break;
+
+          if (result.success) {
+            await removePendingBooking({
+              email: booking.email,
+              dateTime: booking.dateTime,
+            });
+            if (cancelled) break;
+
+            dispatch({
+              type: REMOVE_PENDING_BOOKING,
+              payload: {
+                email: booking.email,
+                dateTime: booking.dateTime,
+              },
+            });
+          }
+        } catch (error) {
+          console.error("Failed to retry pending booking:", error);
+        }
+      }
+
+      isRetryingRef.current = false;
+    };
+
+    void runReconnectionRetry();
+
+    return () => {
+      cancelled = true;
+      isRetryingRef.current = false;
+    };
+  }, [state.isConnected, dispatch]);
+
   const value = useMemo(
     () => ({
       state,
