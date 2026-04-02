@@ -12,13 +12,15 @@ import { TypingIndicator } from "../components/TypingIndicator";
 import businessProfile from "../data/businessProfile.json";
 import { createBooking } from "../services/bookingService";
 import { sendMessage } from "../services/chatService";
-import { ADD_MESSAGE, SET_LOADING } from "../state/actions";
+import { ADD_MESSAGE, ADD_PENDING_BOOKING, SET_LOADING } from "../state/actions";
 import { useAppContext } from "../state/AppContext";
 import type { BookingResponseData } from "../types/booking";
 import type { Message } from "../types/message";
+import { addPendingBooking } from "../utils/storage";
 
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
+const BOOKING_PERSISTENCE_FALLBACK_MESSAGE = "I'm sorry, I wasn't able to save your appointment right now, but I've noted the details and will try again shortly.";
 
 type GiftedMessageWithBooking = IMessage & {
   bookingData?: BookingResponseData;
@@ -150,9 +152,9 @@ export default function ChatScreen() {
             dispatch({
               type: ADD_MESSAGE,
               payload: {
-                id: createMessageId("bot"),
+                id: createMessageId(BOT_USER_ID),
                 text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
-                sender: "bot",
+                sender: BOT_USER_ID,
                 createdAt: new Date().toISOString(),
                 status: "sent",
                 metadata: {
@@ -163,12 +165,39 @@ export default function ChatScreen() {
             return;
           }
 
+          if (bookingResult.error?.code === "SHEET_WRITE_FAILED") {
+            try {
+              await addPendingBooking(args);
+            } catch (err) {
+              console.error("Failed to add pending booking:", err);
+            }
+
+            if (!isMounted.current) return;
+
+            dispatch({
+              type: ADD_PENDING_BOOKING,
+              payload: args,
+            });
+
+            dispatch({
+              type: ADD_MESSAGE,
+              payload: {
+                id: createMessageId(BOT_USER_ID),
+                text: BOOKING_PERSISTENCE_FALLBACK_MESSAGE,
+                sender: BOT_USER_ID,
+                createdAt: new Date().toISOString(),
+                status: "sent",
+              },
+            });
+            return;
+          }
+
           dispatch({
             type: ADD_MESSAGE,
             payload: {
-              id: createMessageId("bot"),
+              id: createMessageId(BOT_USER_ID),
               text: bookingResult.error?.message || "I could not complete your booking right now. Please try again in a moment.",
-              sender: "bot",
+              sender: BOT_USER_ID,
               createdAt: new Date().toISOString(),
               status: "sent",
             },
@@ -180,9 +209,9 @@ export default function ChatScreen() {
           dispatch({
             type: ADD_MESSAGE,
             payload: {
-              id: createMessageId("bot"),
+              id: createMessageId(BOT_USER_ID),
               text: response.data.reply,
-              sender: "bot",
+              sender: BOT_USER_ID,
               createdAt: new Date().toISOString(),
               status: "sent",
             },
@@ -193,9 +222,9 @@ export default function ChatScreen() {
         dispatch({
           type: ADD_MESSAGE,
           payload: {
-            id: createMessageId("bot"),
+            id: createMessageId(BOT_USER_ID),
             text: "I am sorry, I could not process that just now. Please try again in a moment.",
-            sender: "bot",
+            sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",
           },
@@ -206,9 +235,9 @@ export default function ChatScreen() {
         dispatch({
           type: ADD_MESSAGE,
           payload: {
-            id: createMessageId("bot"),
+            id: createMessageId(BOT_USER_ID),
             text: "I am sorry, I could not process that just now. Please try again in a moment.",
-            sender: "bot",
+            sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",
           },
