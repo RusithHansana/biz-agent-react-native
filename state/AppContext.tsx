@@ -58,7 +58,12 @@ export function AppProvider({ children }: PropsWithChildren) {
         }
 
         if (!result.success) {
-          continue;
+          const errorCode = result.error?.code;
+          if (errorCode === "SHEET_WRITE_FAILED" || errorCode === "NETWORK_ERROR" || errorCode === "TIMEOUT") {
+            continue; // Leave transient errors in storage and state for the next attempt/boot
+          }
+          // For permanent errors (like validation failures), proceed to remove from storage and state
+          // to prevent infinite loops.
         }
 
         await removePendingBooking({
@@ -113,21 +118,28 @@ export function AppProvider({ children }: PropsWithChildren) {
           const result = await createBooking(booking);
           if (cancelled) break;
 
-          if (result.success) {
-            await removePendingBooking({
+          if (!result.success) {
+            const errorCode = result.error?.code;
+            if (errorCode === "SHEET_WRITE_FAILED" || errorCode === "NETWORK_ERROR" || errorCode === "TIMEOUT") {
+              continue;
+            }
+            // For permanent errors drop through to remove the booking from storage
+          }
+
+          // Both successes and permanent failures get removed
+          await removePendingBooking({
+            email: booking.email,
+            dateTime: booking.dateTime,
+          });
+          if (cancelled) break;
+
+          dispatch({
+            type: REMOVE_PENDING_BOOKING,
+            payload: {
               email: booking.email,
               dateTime: booking.dateTime,
-            });
-            if (cancelled) break;
-
-            dispatch({
-              type: REMOVE_PENDING_BOOKING,
-              payload: {
-                email: booking.email,
-                dateTime: booking.dateTime,
-              },
-            });
-          }
+            },
+          });
         } catch (error) {
           console.error("Failed to retry pending booking:", error);
         }

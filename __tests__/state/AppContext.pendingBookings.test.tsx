@@ -97,4 +97,66 @@ describe("AppProvider pending bookings boot retry", () => {
       expect(getByText("1")).toBeTruthy();
     });
   });
+
+  it("removes permanent validation errors during boot to prevent infinite loops", async () => {
+    const bookingA: BookingData = {
+      name: "Jane Doe",
+      email: "jane@example.com",
+      serviceType: "consultation",
+      dateTime: "2026-04-10T09:00:00Z",
+    };
+
+    const bookingB: BookingData = {
+      name: "John Smith",
+      email: "john@example.com",
+      serviceType: "follow-up",
+      dateTime: "2026-04-11T10:00:00Z",
+    };
+
+    mockedLoadPendingBookings.mockResolvedValue([bookingA, bookingB]);
+    mockedCreateBooking
+      .mockResolvedValueOnce({
+        success: false,
+        data: null,
+        error: {
+          code: "INVALID_INPUT",
+          message: "Email must be 255 characters or fewer.",
+        },
+      })
+      .mockResolvedValueOnce({
+        success: false,
+        data: null,
+        error: {
+          code: "OUTSIDE_HOURS",
+          message: "The requested time is outside business hours.",
+        },
+      });
+
+    const { getByText } = render(
+      <AppProvider>
+        <PendingBookingsProbe />
+      </AppProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockedCreateBooking).toHaveBeenNthCalledWith(1, bookingA);
+      expect(mockedCreateBooking).toHaveBeenNthCalledWith(2, bookingB);
+    });
+
+    await waitFor(() => {
+      expect(mockedRemovePendingBooking).toHaveBeenCalledWith({
+        email: bookingA.email,
+        dateTime: bookingA.dateTime,
+      });
+      expect(mockedRemovePendingBooking).toHaveBeenCalledWith({
+        email: bookingB.email,
+        dateTime: bookingB.dateTime,
+      });
+      expect(mockedRemovePendingBooking).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(getByText("0")).toBeTruthy();
+    });
+  });
 });
