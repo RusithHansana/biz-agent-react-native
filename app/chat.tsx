@@ -152,9 +152,9 @@ export default function ChatScreen() {
             dispatch({
               type: ADD_MESSAGE,
               payload: {
-                id: createMessageId("bot"),
+                id: createMessageId(BOT_USER_ID),
                 text: response.data.reply?.trim() || buildBookingFollowUp(bookingResult.data),
-                sender: "bot",
+                sender: BOT_USER_ID,
                 createdAt: new Date().toISOString(),
                 status: "sent",
                 metadata: {
@@ -166,7 +166,11 @@ export default function ChatScreen() {
           }
 
           if (bookingResult.error?.code === "SHEET_WRITE_FAILED") {
-            await addPendingBooking(args);
+            try {
+              await addPendingBooking(args);
+            } catch (err) {
+              console.error("Failed to add pending booking:", err);
+            }
 
             if (!isMounted.current) return;
 
@@ -178,9 +182,9 @@ export default function ChatScreen() {
             dispatch({
               type: ADD_MESSAGE,
               payload: {
-                id: createMessageId("bot"),
+                id: createMessageId(BOT_USER_ID),
                 text: BOOKING_PERSISTENCE_FALLBACK_MESSAGE,
-                sender: "bot",
+                sender: BOT_USER_ID,
                 createdAt: new Date().toISOString(),
                 status: "sent",
               },
@@ -191,9 +195,9 @@ export default function ChatScreen() {
           dispatch({
             type: ADD_MESSAGE,
             payload: {
-              id: createMessageId("bot"),
+              id: createMessageId(BOT_USER_ID),
               text: bookingResult.error?.message || "I could not complete your booking right now. Please try again in a moment.",
-              sender: "bot",
+              sender: BOT_USER_ID,
               createdAt: new Date().toISOString(),
               status: "sent",
             },
@@ -205,9 +209,9 @@ export default function ChatScreen() {
           dispatch({
             type: ADD_MESSAGE,
             payload: {
-              id: createMessageId("bot"),
+              id: createMessageId(BOT_USER_ID),
               text: response.data.reply,
-              sender: "bot",
+              sender: BOT_USER_ID,
               createdAt: new Date().toISOString(),
               status: "sent",
             },
@@ -218,9 +222,9 @@ export default function ChatScreen() {
         dispatch({
           type: ADD_MESSAGE,
           payload: {
-            id: createMessageId("bot"),
+            id: createMessageId(BOT_USER_ID),
             text: "I am sorry, I could not process that just now. Please try again in a moment.",
-            sender: "bot",
+            sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",
           },
@@ -231,9 +235,9 @@ export default function ChatScreen() {
         dispatch({
           type: ADD_MESSAGE,
           payload: {
-            id: createMessageId("bot"),
+            id: createMessageId(BOT_USER_ID),
             text: "I am sorry, I could not process that just now. Please try again in a moment.",
-            sender: "bot",
+            sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",
           },

@@ -42,45 +42,53 @@ export function AppProvider({ children }: PropsWithChildren) {
     let cancelled = false;
 
     const runPendingBookingRetry = async () => {
-      const pendingBookings = await loadPendingBookings();
-      if (cancelled) {
-        return;
-      }
-
-      for (const booking of pendingBookings) {
-        dispatch({ type: ADD_PENDING_BOOKING, payload: booking });
-      }
-
-      for (const booking of pendingBookings) {
-        const result = await createBooking(booking);
+      try {
+        const pendingBookings = await loadPendingBookings();
         if (cancelled) {
           return;
         }
 
-        if (!result.success) {
-          const errorCode = result.error?.code;
-          if (errorCode === "SHEET_WRITE_FAILED" || errorCode === "NETWORK_ERROR" || errorCode === "TIMEOUT") {
-            continue; // Leave transient errors in storage and state for the next attempt/boot
+        for (const booking of pendingBookings) {
+          dispatch({ type: ADD_PENDING_BOOKING, payload: booking });
+        }
+
+        for (const booking of pendingBookings) {
+          try {
+            const result = await createBooking(booking);
+            if (cancelled) {
+              return;
+            }
+
+            if (!result.success) {
+              const errorCode = result.error?.code;
+              if (errorCode === "SHEET_WRITE_FAILED" || errorCode === "NETWORK_ERROR" || errorCode === "TIMEOUT") {
+                continue; // Leave transient errors in storage and state for the next attempt/boot
+              }
+              // For permanent errors (like validation failures), proceed to remove from storage and state
+              // to prevent infinite loops.
+            }
+
+            await removePendingBooking({
+              email: booking.email,
+              dateTime: booking.dateTime,
+            });
+            if (cancelled) {
+              return;
+            }
+
+            dispatch({
+              type: REMOVE_PENDING_BOOKING,
+              payload: {
+                email: booking.email,
+                dateTime: booking.dateTime,
+              },
+            });
+          } catch (error) {
+            console.error("Error processing pending booking during boot retry:", error);
           }
-          // For permanent errors (like validation failures), proceed to remove from storage and state
-          // to prevent infinite loops.
         }
-
-        await removePendingBooking({
-          email: booking.email,
-          dateTime: booking.dateTime,
-        });
-        if (cancelled) {
-          return;
-        }
-
-        dispatch({
-          type: REMOVE_PENDING_BOOKING,
-          payload: {
-            email: booking.email,
-            dateTime: booking.dateTime,
-          },
-        });
+      } catch (error) {
+        console.error("Critical error in runPendingBookingRetry:", error);
       }
     };
 
@@ -88,6 +96,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
     return () => {
       cancelled = true;
+      bootRetryStartedRef.current = false;
     };
   }, [dispatch]);
 
