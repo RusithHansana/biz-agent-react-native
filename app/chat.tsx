@@ -21,9 +21,9 @@ import { addPendingBooking } from "../utils/storage";
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
 const BOOKING_PERSISTENCE_FALLBACK_MESSAGE = "I'm sorry, I wasn't able to save your appointment right now, but I've noted the details and will try again shortly.";
-const GENERIC_CHAT_ERROR_MESSAGE = "I am sorry, I could not process that just now. Please try again in a moment.";
+export const GENERIC_CHAT_ERROR_MESSAGE = "I am sorry, I could not process that just now. Please try again in a moment.";
 
-const CHAT_ERROR_CODE_TO_MESSAGE: Record<string, string> = {
+export const CHAT_ERROR_CODE_TO_MESSAGE: Record<string, string> = {
   GEMINI_TIMEOUT: "I'm taking a little longer than usual. Please try sending your message again.",
   TIMEOUT: "I'm taking a little longer than usual. Please try sending your message again.",
   RATE_LIMIT_EXCEEDED: "I'm getting a lot of requests right now. Please wait a moment and try again.",
@@ -77,11 +77,11 @@ function buildBookingFollowUp(booking: BookingResponseData): string {
 }
 
 function mapChatErrorCodeToMessage(errorCode?: string): string {
-  if (!errorCode) {
+  if (!errorCode || !Object.prototype.hasOwnProperty.call(CHAT_ERROR_CODE_TO_MESSAGE, errorCode)) {
     return GENERIC_CHAT_ERROR_MESSAGE;
   }
 
-  return CHAT_ERROR_CODE_TO_MESSAGE[errorCode] ?? GENERIC_CHAT_ERROR_MESSAGE;
+  return CHAT_ERROR_CODE_TO_MESSAGE[errorCode];
 }
 
 export default function ChatScreen() {

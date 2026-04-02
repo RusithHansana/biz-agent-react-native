@@ -2,7 +2,7 @@ import React from "react";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
-import ChatScreen from "../../app/chat";
+import ChatScreen, { CHAT_ERROR_CODE_TO_MESSAGE, GENERIC_CHAT_ERROR_MESSAGE } from "../../app/chat";
 import { createBooking } from "../../services/bookingService";
 import { ADD_PENDING_BOOKING } from "../../state/actions";
 import { useAppContext } from "../../state/AppContext";
@@ -91,10 +91,7 @@ const getDispatchedBotTexts = (): string[] => {
 
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
-    mockDispatch.mockReset();
-    mockedCreateBooking.mockReset();
-    mockedAddPendingBooking.mockReset();
-    mockedSendMessage.mockReset();
+    jest.resetAllMocks();
     mockedUseAppContext.mockReturnValue({
       state: {
         messages: [],
@@ -104,6 +101,10 @@ describe("ChatScreen booking integration", () => {
       },
       dispatch: mockDispatch,
     });
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it("calls createBooking when backend functionCall requests createBooking", async () => {
@@ -225,7 +226,7 @@ describe("ChatScreen booking integration", () => {
 
     await waitFor(() => {
       expect(getDispatchedBotTexts()).toContain(
-        "I'm taking a little longer than usual. Please try sending your message again.",
+        CHAT_ERROR_CODE_TO_MESSAGE.GEMINI_TIMEOUT,
       );
     });
   });
@@ -245,7 +246,7 @@ describe("ChatScreen booking integration", () => {
 
     await waitFor(() => {
       expect(getDispatchedBotTexts()).toContain(
-        "I'm getting a lot of requests right now. Please wait a moment and try again.",
+        CHAT_ERROR_CODE_TO_MESSAGE.RATE_LIMIT_EXCEEDED,
       );
     });
   });
@@ -265,7 +266,7 @@ describe("ChatScreen booking integration", () => {
 
     await waitFor(() => {
       expect(getDispatchedBotTexts()).toContain(
-        "It seems we've lost connection. Please check your internet and try again.",
+        CHAT_ERROR_CODE_TO_MESSAGE.NETWORK_ERROR,
       );
     });
   });
@@ -285,7 +286,7 @@ describe("ChatScreen booking integration", () => {
 
     await waitFor(() => {
       expect(getDispatchedBotTexts()).toContain(
-        "I'm taking a little longer than usual. Please try sending your message again.",
+        CHAT_ERROR_CODE_TO_MESSAGE.TIMEOUT,
       );
     });
   });
@@ -298,7 +299,7 @@ describe("ChatScreen booking integration", () => {
 
     await waitFor(() => {
       const botTexts = getDispatchedBotTexts();
-      expect(botTexts).toContain("I am sorry, I could not process that just now. Please try again in a moment.");
+      expect(botTexts).toContain(GENERIC_CHAT_ERROR_MESSAGE);
       expect(botTexts.join(" ")).not.toContain("Socket hang up");
       expect(botTexts.join(" ")).not.toContain("500");
     });

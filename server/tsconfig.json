@@ -4,9 +4,6 @@
     "lib": [
       "ES2022"
     ],
-    "types": [
-      "jest"
-    ],
     "module": "CommonJS",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
