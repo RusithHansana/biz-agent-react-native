@@ -2,10 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { BookingData } from "../../types/booking";
 import {
-    PENDING_BOOKINGS_STORAGE_KEY,
-    addPendingBooking,
-    loadPendingBookings,
-    savePendingBookings,
+  PENDING_BOOKINGS_STORAGE_KEY,
+  addPendingBooking,
+  loadPendingBookings,
+  savePendingBookings,
 } from "../../utils/storage";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -38,11 +38,19 @@ describe("storage pending bookings", () => {
     await expect(loadPendingBookings()).resolves.toEqual([bookingA, bookingB]);
   });
 
-  it("dedupes in addPendingBooking using email + dateTime", async () => {
+  it("overwrites existing pending booking using email + dateTime", async () => {
     await addPendingBooking(bookingA);
-    await addPendingBooking({ ...bookingA, serviceType: "updated-service" });
+    const updatedBooking = { ...bookingA, serviceType: "updated-service" };
+    await addPendingBooking(updatedBooking);
 
-    await expect(loadPendingBookings()).resolves.toEqual([bookingA]);
+    await expect(loadPendingBookings()).resolves.toEqual([updatedBooking]);
+  });
+
+  it("inserts new booking when no matching email + dateTime exists", async () => {
+    await addPendingBooking(bookingA);
+    await addPendingBooking(bookingB);
+
+    await expect(loadPendingBookings()).resolves.toEqual([bookingA, bookingB]);
   });
 
   it("returns empty array for corrupt JSON", async () => {

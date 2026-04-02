@@ -42,16 +42,20 @@ export async function savePendingBookings(bookings: BookingData[]): Promise<void
 }
 
 export async function addPendingBooking(booking: BookingData): Promise<BookingData[]> {
+  if (!booking?.email || !booking?.dateTime) {
+    throw new Error("Invalid booking data: email and dateTime are required.");
+  }
+
   const existing = await loadPendingBookings();
-  const isDuplicate = existing.some(
+  const index = existing.findIndex(
     (current) => current.email === booking.email && current.dateTime === booking.dateTime,
   );
 
-  if (isDuplicate) {
-    return existing;
-  }
+  const updated: BookingData[] =
+    index !== -1
+      ? existing.map((current, i) => (i === index ? booking : current))
+      : [...existing, booking];
 
-  const updated = [...existing, booking];
   await savePendingBookings(updated);
   return updated;
 }
