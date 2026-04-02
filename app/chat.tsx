@@ -21,6 +21,14 @@ import { addPendingBooking } from "../utils/storage";
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
 const BOOKING_PERSISTENCE_FALLBACK_MESSAGE = "I'm sorry, I wasn't able to save your appointment right now, but I've noted the details and will try again shortly.";
+const GENERIC_CHAT_ERROR_MESSAGE = "I am sorry, I could not process that just now. Please try again in a moment.";
+
+const CHAT_ERROR_CODE_TO_MESSAGE: Record<string, string> = {
+  GEMINI_TIMEOUT: "I'm taking a little longer than usual. Please try sending your message again.",
+  TIMEOUT: "I'm taking a little longer than usual. Please try sending your message again.",
+  RATE_LIMIT_EXCEEDED: "I'm getting a lot of requests right now. Please wait a moment and try again.",
+  NETWORK_ERROR: "It seems we've lost connection. Please check your internet and try again.",
+};
 
 type GiftedMessageWithBooking = IMessage & {
   bookingData?: BookingResponseData;
@@ -66,6 +74,14 @@ function createMessageId(prefix: "user" | "bot"): string {
 
 function buildBookingFollowUp(booking: BookingResponseData): string {
   return `Your booking is confirmed for ${booking.date} at ${booking.time}. We have sent the confirmation to ${booking.email}.`;
+}
+
+function mapChatErrorCodeToMessage(errorCode?: string): string {
+  if (!errorCode) {
+    return GENERIC_CHAT_ERROR_MESSAGE;
+  }
+
+  return CHAT_ERROR_CODE_TO_MESSAGE[errorCode] ?? GENERIC_CHAT_ERROR_MESSAGE;
 }
 
 export default function ChatScreen() {
@@ -223,7 +239,7 @@ export default function ChatScreen() {
           type: ADD_MESSAGE,
           payload: {
             id: createMessageId(BOT_USER_ID),
-            text: "I am sorry, I could not process that just now. Please try again in a moment.",
+            text: mapChatErrorCodeToMessage(response.error?.code),
             sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",
@@ -236,7 +252,7 @@ export default function ChatScreen() {
           type: ADD_MESSAGE,
           payload: {
             id: createMessageId(BOT_USER_ID),
-            text: "I am sorry, I could not process that just now. Please try again in a moment.",
+            text: GENERIC_CHAT_ERROR_MESSAGE,
             sender: BOT_USER_ID,
             createdAt: new Date().toISOString(),
             status: "sent",

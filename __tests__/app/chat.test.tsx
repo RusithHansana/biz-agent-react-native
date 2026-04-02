@@ -82,6 +82,13 @@ const mockedCreateBooking = createBooking as jest.MockedFunction<typeof createBo
 const mockedAddPendingBooking = addPendingBooking as jest.MockedFunction<typeof addPendingBooking>;
 const mockedSendMessage = require("../../services/chatService").sendMessage as jest.Mock;
 
+const getDispatchedBotTexts = (): string[] => {
+  return mockDispatch.mock.calls
+    .map((args) => args[0])
+    .filter((action) => action?.payload?.sender === "bot")
+    .map((action) => action.payload.text as string);
+};
+
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
     mockDispatch.mockReset();
@@ -200,6 +207,100 @@ describe("ChatScreen booking integration", () => {
           }),
         }),
       );
+    });
+  });
+
+  it("maps GEMINI_TIMEOUT to the exact timeout bot message", async () => {
+    mockedSendMessage.mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        code: "GEMINI_TIMEOUT",
+        message: "The assistant took too long to respond. Please try again.",
+      },
+    });
+
+    render(<ChatScreen />);
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      expect(getDispatchedBotTexts()).toContain(
+        "I'm taking a little longer than usual. Please try sending your message again.",
+      );
+    });
+  });
+
+  it("maps RATE_LIMIT_EXCEEDED to the exact rate-limit bot message", async () => {
+    mockedSendMessage.mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        code: "RATE_LIMIT_EXCEEDED",
+        message: "Rate limit exceeded",
+      },
+    });
+
+    render(<ChatScreen />);
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      expect(getDispatchedBotTexts()).toContain(
+        "I'm getting a lot of requests right now. Please wait a moment and try again.",
+      );
+    });
+  });
+
+  it("maps NETWORK_ERROR to the exact network bot message", async () => {
+    mockedSendMessage.mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        code: "NETWORK_ERROR",
+        message: "Network error while connecting to backend.",
+      },
+    });
+
+    render(<ChatScreen />);
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      expect(getDispatchedBotTexts()).toContain(
+        "It seems we've lost connection. Please check your internet and try again.",
+      );
+    });
+  });
+
+  it("maps TIMEOUT to the same timeout bot message", async () => {
+    mockedSendMessage.mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        code: "TIMEOUT",
+        message: "The request timed out. Please try again.",
+      },
+    });
+
+    render(<ChatScreen />);
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      expect(getDispatchedBotTexts()).toContain(
+        "I'm taking a little longer than usual. Please try sending your message again.",
+      );
+    });
+  });
+
+  it("uses a plain non-technical fallback message when sendMessage throws", async () => {
+    mockedSendMessage.mockRejectedValue(new Error("Socket hang up 500"));
+
+    render(<ChatScreen />);
+    fireEvent.press(screen.getByLabelText("send-booking"));
+
+    await waitFor(() => {
+      const botTexts = getDispatchedBotTexts();
+      expect(botTexts).toContain("I am sorry, I could not process that just now. Please try again in a moment.");
+      expect(botTexts.join(" ")).not.toContain("Socket hang up");
+      expect(botTexts.join(" ")).not.toContain("500");
     });
   });
 });
