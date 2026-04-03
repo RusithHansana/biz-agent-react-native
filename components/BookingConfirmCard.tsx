@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { forwardRef, useEffect } from "react";
 
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
@@ -15,7 +15,10 @@ export type BookingConfirmCardProps = {
   booking: BookingResponseData;
 };
 
-export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
+export const BookingConfirmCard = forwardRef<View, BookingConfirmCardProps>(function BookingConfirmCardComponent(
+  { booking },
+  ref
+) {
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(reduceMotion ? 1 : 0.8);
   const theme = useTheme();
@@ -36,10 +39,11 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
     transform: [{ scale: scale.value }],
   }));
 
-  const a11yLabel = `Booking confirmed: ${booking.serviceType} on ${booking.date} at ${booking.time}`;
+  const a11yLabel = `Booking confirmed: ${booking.serviceType} for ${booking.name} at ${booking.email} on ${booking.date} at ${booking.time}`;
 
   return (
     <Animated.View
+      ref={ref as any}
       testID="booking-confirm-card"
       style={[
         styles.card,
@@ -82,7 +86,7 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
       </View>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

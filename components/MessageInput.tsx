@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, TextInputKeyPressEvent, View } from "react-native";
 import { IconButton, TextInput } from "react-native-paper";
 
@@ -24,8 +24,19 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
   const [draft, setDraft] = useState("");
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const { spacing: responsiveSpacing } = useResponsiveLayout();
+  const inputRef = useRef<any>(null);
 
   const canSend = useMemo(() => !disabled && draft.trim().length > 0, [disabled, draft]);
+
+  useEffect(() => {
+    if (autoFocus && !disabled && inputRef.current) {
+      // Focus after a short delay to prevent UI jank during transitions
+      const timer = setTimeout(() => {
+        inputRef.current?.focus?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus, disabled]);
 
   const clearDraft = useCallback(() => {
     setDraft("");
@@ -86,14 +97,13 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
     <View testID="message-input-wrapper" style={[styles.wrapper, { paddingHorizontal: spacing[responsiveSpacing.inputPaddingX] }]}>
       <View style={styles.inputContainer}>
         <TextInput
+          ref={inputRef}
           mode="flat"
           value={draft}
           multiline
           editable={!disabled}
           placeholder={placeholder}
-          autoFocus={autoFocus && !disabled}
           accessibilityLabel="Message input"
-          accessibilityRole="text"
           accessibilityState={{ disabled }}
           accessibilityHint={disabled ? placeholder : "Type your message"}
           placeholderTextColor={colors.dark.textTertiary}

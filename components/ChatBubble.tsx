@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useRef } from "react";
-import { AccessibilityInfo, StyleSheet, View, findNodeHandle } from "react-native";
+import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
@@ -20,13 +20,16 @@ export interface ChatBubbleProps {
 }
 
 function formatTimestamp(timestamp: Date): string {
+  if (isNaN(timestamp.getTime())) {
+    return "";
+  }
   return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function buildMessageAccessibilityLabel(sender: "user" | "bot", message: string, timestamp: Date): string {
   const senderLabel = sender === "user" ? "you" : "assistant";
   const spokenTimestamp = formatTimestamp(timestamp);
-  return `Message from ${senderLabel}: ${message}. Sent at ${spokenTimestamp}.`;
+  return `Message from ${senderLabel}: ${message}${spokenTimestamp ? `. Sent at ${spokenTimestamp}.` : "."}`;
 }
 
 function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bookingData }: ChatBubbleProps) {
@@ -53,12 +56,9 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
       return;
     }
 
-    const node = findNodeHandle(bookingCardRef.current) ?? 0;
-
-    const accessibilityInfo = AccessibilityInfo as unknown as {
-      sendAccessibilityEvent?: (reactTag: number, eventType: "focus") => void;
-    };
-    accessibilityInfo.sendAccessibilityEvent?.(node, "focus");
+    if (bookingCardRef.current && typeof AccessibilityInfo.sendAccessibilityEvent === 'function') {
+      AccessibilityInfo.sendAccessibilityEvent(bookingCardRef.current, "focus");
+    }
     previousBookingKeyRef.current = bookingKey;
   }, [bookingData]);
 
@@ -89,8 +89,8 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
           )}
 
           {bookingData && (
-            <View ref={bookingCardRef} style={styles.cardContainer}>
-              <BookingConfirmCard booking={bookingData} />
+            <View style={styles.cardContainer}>
+              <BookingConfirmCard ref={bookingCardRef} booking={bookingData} />
             </View>
           )}
         </View>
