@@ -14,9 +14,11 @@ import { createBooking } from "../services/bookingService";
 import { sendMessage } from "../services/chatService";
 import { ADD_MESSAGE, ADD_PENDING_BOOKING, SET_LOADING } from "../state/actions";
 import { useAppContext } from "../state/AppContext";
+import { spacing } from "../theme/spacing";
 import type { BookingResponseData } from "../types/booking";
 import type { Message } from "../types/message";
 import { addPendingBooking } from "../utils/storage";
+import { useResponsiveLayout } from "../utils/useResponsiveLayout";
 
 const BOT_USER_ID = "bot";
 const HUMAN_USER_ID = "user";
@@ -87,6 +89,7 @@ function mapChatErrorCodeToMessage(errorCode?: string): string {
 export default function ChatScreen() {
   const theme = useTheme();
   const { state, dispatch } = useAppContext();
+  const { isSpacious } = useResponsiveLayout();
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -321,7 +324,7 @@ export default function ChatScreen() {
           renderTime={() => null}
           renderDay={() => null}
           renderInputToolbar={() => null}
-          messagesContainerStyle={styles.threadContainer}
+          messagesContainerStyle={[styles.threadContainer, isSpacious ? styles.threadContainerSpacious : null]}
         />
         <MessageInput
           onSend={handleSendText}
@@ -339,5 +342,8 @@ const styles = StyleSheet.create({
   },
   threadContainer: {
     backgroundColor: "transparent",
+  },
+  threadContainerSpacious: {
+    paddingHorizontal: spacing["space-6"],
   },
 });

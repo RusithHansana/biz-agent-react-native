@@ -3,26 +3,34 @@ import React, { useEffect } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
 import { Text, useTheme } from "react-native-paper";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
 import type { BookingResponseData } from "../types/booking";
+import { useReducedMotion } from "../utils/useReducedMotion";
 
 export type BookingConfirmCardProps = {
   booking: BookingResponseData;
 };
 
 export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
-  const scale = useSharedValue(0.8);
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(reduceMotion ? 1 : 0.8);
   const theme = useTheme();
 
   useEffect(() => {
-    scale.value = withTiming(1, {
-      duration: 400,
-    });
-  }, [scale]);
+    if (reduceMotion) {
+      scale.value = 1;
+    } else {
+      scale.value = 0.8;
+      scale.value = withSequence(
+        withTiming(1.06, { duration: 240 }),
+        withTiming(1, { duration: 160 })
+      );
+    }
+  }, [scale, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
