@@ -36,7 +36,7 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
     transform: [{ scale: scale.value }],
   }));
 
-  const a11yLabel = `Booking confirmed. Name: ${booking.name}, Service: ${booking.serviceType}, Date: ${booking.date}, Time: ${booking.time}, Email: ${booking.email}`;
+  const a11yLabel = `Booking confirmed: ${booking.serviceType} on ${booking.date} at ${booking.time}`;
 
   return (
     <Animated.View

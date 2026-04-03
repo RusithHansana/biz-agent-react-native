@@ -17,9 +17,10 @@ export interface MessageInputProps {
   readonly onSend: (message: string) => void;
   readonly disabled: boolean;
   readonly placeholder: string;
+  readonly autoFocus?: boolean;
 }
 
-function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputProps) {
+function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = false }: MessageInputProps) {
   const [draft, setDraft] = useState("");
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const { spacing: responsiveSpacing } = useResponsiveLayout();
@@ -90,7 +91,9 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           multiline
           editable={!disabled}
           placeholder={placeholder}
+          autoFocus={autoFocus && !disabled}
           accessibilityLabel="Message input"
+          accessibilityRole="text"
           accessibilityState={{ disabled }}
           accessibilityHint={disabled ? placeholder : "Type your message"}
           placeholderTextColor={colors.dark.textTertiary}
@@ -115,7 +118,9 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           size={20}
           style={styles.sendButton}
           disabled={!canSend}
+          accessibilityRole="button"
           accessibilityLabel="Send message"
+          accessibilityHint={disabled ? "Chat is offline" : "Sends the current message"}
           accessibilityState={{ disabled: !canSend }}
           onPress={handleSend}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}

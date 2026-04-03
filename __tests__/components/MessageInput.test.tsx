@@ -132,4 +132,39 @@ describe("MessageInput", () => {
 
     expect(input.props.maxFontSizeMultiplier).toBe(1.5);
   });
+
+  it("enables autofocus when requested", () => {
+    render(
+      <MessageInput
+        onSend={jest.fn()}
+        disabled={false}
+        placeholder="Type a message..."
+        autoFocus
+      />,
+    );
+
+    const input = screen.getByLabelText("Message input");
+    expect(input.props.autoFocus).toBe(true);
+  });
+
+  it("sends on Enter and does not send on Shift+Enter", () => {
+    const onSend = jest.fn();
+
+    render(
+      <MessageInput
+        onSend={onSend}
+        disabled={false}
+        placeholder="Type a message..."
+      />,
+    );
+
+    const input = screen.getByLabelText("Message input");
+
+    fireEvent.changeText(input, "Keyboard submit");
+    fireEvent(input, "keyPress", { nativeEvent: { key: "Enter", shiftKey: true } });
+    expect(onSend).not.toHaveBeenCalled();
+
+    fireEvent(input, "keyPress", { nativeEvent: { key: "Enter", shiftKey: false } });
+    expect(onSend).toHaveBeenCalledWith("Keyboard submit");
+  });
 });
