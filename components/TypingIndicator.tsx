@@ -4,14 +4,24 @@ import { Text } from "react-native-paper";
 
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
+import { useReducedMotion } from "../utils/useReducedMotion";
 
 const DOT_COUNT = 3;
 
 function TypingIndicatorComponent() {
-  const [dotOpacities] = useState(() => Array.from({ length: DOT_COUNT }, () => new Animated.Value(0.3)));
+  const reduceMotion = useReducedMotion();
+  const [dotOpacities] = useState(() => Array.from({ length: DOT_COUNT }, () => new Animated.Value(reduceMotion ? 1 : 0.3)));
 
   useEffect(() => {
+    if (reduceMotion) {
+      dotOpacities.forEach(d => d.setValue(1));
+      return;
+    }
+
+    dotOpacities.forEach(d => d.setValue(0.3));
+
     const animation = Animated.loop(
+
       Animated.stagger(
         200,
         dotOpacities.map((value) =>
@@ -38,7 +48,7 @@ function TypingIndicatorComponent() {
     return () => {
       animation.stop();
     };
-  }, [dotOpacities]);
+  }, [dotOpacities, reduceMotion]);
 
   return (
     <View

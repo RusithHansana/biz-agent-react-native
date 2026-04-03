@@ -1,11 +1,13 @@
 import React, { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
 import type { BookingResponseData } from "../types/booking";
+import { useReducedMotion } from "../utils/useReducedMotion";
 import { BookingConfirmCard } from "./BookingConfirmCard";
 
 export interface ChatBubbleProps {
@@ -21,6 +23,7 @@ function formatTimestamp(timestamp: Date): string {
 }
 
 function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bookingData }: ChatBubbleProps) {
+  const reduceMotion = useReducedMotion();
   const hasText = message && message.trim().length > 0;
   
   if (!hasText && !bookingData) {
@@ -28,9 +31,14 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
   }
 
   const isUser = sender === "user";
+  
+  // Use FadeInDown.duration(200) for standard motion, FadeIn.duration(0) or just null for reduced motion. 
+  // For reduced motion, we can just use undefined to disable entering animation completely or use FadeIn with 0 ms.
+  // The simplest is to not provide an entering prop if reduced motion is on.
+  const enteringAnim = reduceMotion ? undefined : FadeInDown.duration(200);
 
   return (
-    <View style={[styles.wrapper, isUser ? styles.wrapperUser : styles.wrapperBot]}>
+    <Animated.View entering={enteringAnim} style={[styles.wrapper, isUser ? styles.wrapperUser : styles.wrapperBot]}>
       <View style={styles.row}>
         {!isUser ? (
           <View testID="chat-bubble-bot-avatar" style={[styles.avatar, !showAvatar && styles.avatarHidden]}>
@@ -53,7 +61,7 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
           )}
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

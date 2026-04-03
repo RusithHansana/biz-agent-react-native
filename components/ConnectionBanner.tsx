@@ -5,6 +5,7 @@ import { ActivityIndicator, Text } from "react-native-paper";
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
+import { useReducedMotion } from "../utils/useReducedMotion";
 
 const ANIMATION_DURATION_MS = 250;
 const RECONNECTING_VISIBLE_MS = 600;
@@ -14,6 +15,7 @@ export interface ConnectionBannerProps {
 }
 
 function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
+  const reduceMotion = useReducedMotion();
   const previousIsConnected = useRef(isConnected);
   const [visible, setVisible] = useState(!isConnected);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -54,7 +56,7 @@ function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
 
       Animated.timing(translateY, {
         toValue: 0,
-        duration: ANIMATION_DURATION_MS,
+        duration: reduceMotion ? 0 : ANIMATION_DURATION_MS,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
@@ -68,14 +70,14 @@ function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
       Animated.sequence([
         Animated.timing(translateY, {
           toValue: 0,
-          duration: ANIMATION_DURATION_MS,
+          duration: reduceMotion ? 0 : ANIMATION_DURATION_MS,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-        Animated.delay(RECONNECTING_VISIBLE_MS),
+        Animated.delay(reduceMotion ? 0 : RECONNECTING_VISIBLE_MS),
         Animated.timing(translateY, {
           toValue: -bannerHeight,
-          duration: ANIMATION_DURATION_MS,
+          duration: reduceMotion ? 0 : ANIMATION_DURATION_MS,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
         }),
@@ -93,7 +95,7 @@ function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
       setIsReconnecting(false);
       translateY.setValue(-bannerHeight);
     }
-  }, [isConnected, translateY, bannerHeight]);
+  }, [isConnected, translateY, bannerHeight, reduceMotion]);
 
   if (!visible) {
     return null;

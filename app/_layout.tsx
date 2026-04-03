@@ -7,6 +7,7 @@ import { PaperProvider } from "react-native-paper";
 
 import { AppProvider } from "../state/AppContext";
 import { paperDarkTheme } from "../theme/paperTheme";
+import { useReducedMotion } from "../utils/useReducedMotion";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -31,10 +32,18 @@ export default function RootLayout() {
     return null;
   }
 
+  const reduceMotion = useReducedMotion();
+
   return (
     <PaperProvider theme={paperDarkTheme}>
       <AppProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack 
+          screenOptions={{ 
+            headerShown: false,
+            animation: reduceMotion ? "none" : "slide_from_right",
+            animationDuration: reduceMotion ? undefined : 300,
+          }} 
+        />
       </AppProvider>
     </PaperProvider>
   );
