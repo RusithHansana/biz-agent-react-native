@@ -5,6 +5,7 @@ import { IconButton, TextInput } from "react-native-paper";
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
+import { useResponsiveLayout } from "../utils/useResponsiveLayout";
 
 const MAX_LINES = 4;
 const INPUT_VERTICAL_PADDING = spacing["space-2"];
@@ -21,6 +22,7 @@ export interface MessageInputProps {
 function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputProps) {
   const [draft, setDraft] = useState("");
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
+  const { spacing: responsiveSpacing } = useResponsiveLayout();
 
   const canSend = useMemo(() => !disabled && draft.trim().length > 0, [disabled, draft]);
 
@@ -80,7 +82,7 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
   );
 
   return (
-    <View style={styles.wrapper}>
+    <View testID="message-input-wrapper" style={[styles.wrapper, { paddingHorizontal: spacing[responsiveSpacing.inputPaddingX] }]}>
       <View style={styles.inputContainer}>
         <TextInput
           mode="flat"
@@ -102,6 +104,7 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           underlineColor="transparent"
           activeUnderlineColor="transparent"
           selectionColor={colors.dark.accentPrimary}
+          maxFontSizeMultiplier={1.5}
         />
 
         <IconButton

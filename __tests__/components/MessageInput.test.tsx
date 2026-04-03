@@ -1,12 +1,26 @@
 import React from "react";
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
+import { StyleSheet } from "react-native";
 
 import { MessageInput } from "../../components/MessageInput";
 
+const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
+
 describe("MessageInput", () => {
+  beforeEach(() => {
+    useWindowDimensionsSpy.mockReturnValue({
+      width: 390,
+      height: 844,
+      scale: 3,
+      fontScale: 1,
+    });
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
+    useWindowDimensionsSpy.mockReset();
   });
 
   it("renders placeholder text", () => {
@@ -81,5 +95,41 @@ describe("MessageInput", () => {
 
     expect(screen.queryByDisplayValue("Should not send")).toBeNull();
     expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it("uses spacious horizontal padding on large screens", () => {
+    useWindowDimensionsSpy.mockReturnValue({
+      width: 430,
+      height: 900,
+      scale: 3,
+      fontScale: 1,
+    });
+
+    render(
+      <MessageInput
+        onSend={jest.fn()}
+        disabled={false}
+        placeholder="Type a message..."
+      />,
+    );
+
+    const wrapper = screen.getByTestId("message-input-wrapper");
+    const flattened = StyleSheet.flatten(wrapper.props.style);
+
+    expect(flattened.paddingHorizontal).toBe(24);
+  });
+
+  it("applies maxFontSizeMultiplier to text input", () => {
+    render(
+      <MessageInput
+        onSend={jest.fn()}
+        disabled={false}
+        placeholder="Type a message..."
+      />,
+    );
+
+    const input = screen.getByLabelText("Message input");
+
+    expect(input.props.maxFontSizeMultiplier).toBe(1.5);
   });
 });

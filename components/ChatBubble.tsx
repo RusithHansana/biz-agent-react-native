@@ -8,6 +8,7 @@ import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
 import type { BookingResponseData } from "../types/booking";
 import { useReducedMotion } from "../utils/useReducedMotion";
+import { useResponsiveLayout } from "../utils/useResponsiveLayout";
 import { BookingConfirmCard } from "./BookingConfirmCard";
 
 export interface ChatBubbleProps {
@@ -24,6 +25,7 @@ function formatTimestamp(timestamp: Date): string {
 
 function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bookingData }: ChatBubbleProps) {
   const reduceMotion = useReducedMotion();
+  const { spacing: responsiveSpacing } = useResponsiveLayout();
   const hasText = message && message.trim().length > 0;
   
   if (!hasText && !bookingData) {
@@ -35,7 +37,7 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
 
   return (
     <Animated.View entering={enteringAnim} style={[styles.wrapper, isUser ? styles.wrapperUser : styles.wrapperBot]}>
-      <View style={styles.row}>
+      <View testID="chat-bubble-row" style={[styles.row, { maxWidth: responsiveSpacing.bubbleMaxWidth }]}>
         {!isUser ? (
           <View testID="chat-bubble-bot-avatar" style={[styles.avatar, !showAvatar && styles.avatarHidden]}>
             <Text style={[styles.avatarLabel, !showAvatar && styles.avatarHidden]}>AI</Text>
@@ -45,8 +47,8 @@ function ChatBubbleComponent({ sender, message, timestamp, showAvatar = true, bo
         <View style={[styles.contentColumn, isUser ? styles.contentColumnUser : styles.contentColumnBot]}>
           {hasText && (
             <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble, bookingData ? { marginBottom: spacing["space-2"] } : undefined]}>
-              <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{message}</Text>
-              <Text style={styles.timestampText}>{formatTimestamp(timestamp)}</Text>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]} maxFontSizeMultiplier={1.5}>{message}</Text>
+              <Text style={styles.timestampText} maxFontSizeMultiplier={1.5}>{formatTimestamp(timestamp)}</Text>
             </View>
           )}
 
@@ -78,7 +80,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: spacing["space-2"],
-    maxWidth: "92%",
   },
   contentColumn: {
     flexDirection: "column",

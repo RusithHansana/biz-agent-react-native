@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
 import { radii, spacing } from "../theme/spacing";
 import { typeScale } from "../theme/typography";
+import { useResponsiveLayout } from "../utils/useResponsiveLayout";
 
 export interface LandingHeroProps {
   readonly businessName: string;
@@ -18,11 +19,17 @@ export interface LandingHeroProps {
 
 export function LandingHero({ businessName, tagline, location, logoUri, onPressChat }: LandingHeroProps) {
   const [imgError, setImgError] = useState(false);
+  const { isCompact, spacing: responsiveSpacing } = useResponsiveLayout();
 
   return (
     <SafeAreaView style={styles.container}>
       <Card mode="contained" style={styles.card}>
-        <Card.Content style={styles.content}>
+        <Card.Content
+          style={[
+            styles.content,
+            { gap: spacing[responsiveSpacing.sectionGap] },
+          ]}
+        >
           {logoUri && !imgError ? (
             <Image
               source={{ uri: logoUri }}
@@ -32,16 +39,31 @@ export function LandingHero({ businessName, tagline, location, logoUri, onPressC
             />
           ) : null}
 
-          <Text style={[styles.textBase, styles.businessName]} numberOfLines={2} ellipsizeMode="tail">
+          <Text
+            style={[styles.textBase, styles.businessName, isCompact ? styles.businessNameCompact : null]}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+            maxFontSizeMultiplier={1.5}
+          >
             {businessName}
           </Text>
-          <Text style={[styles.textBase, styles.tagline]} numberOfLines={2} ellipsizeMode="tail">
+          <Text
+            style={[styles.textBase, styles.tagline]}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+            maxFontSizeMultiplier={1.5}
+          >
             {tagline}
           </Text>
 
           <View style={styles.locationRow}>
             <MaterialCommunityIcons name="map-marker-outline" size={18} color={colors.dark.textSecondary} />
-            <Text style={[styles.textBase, styles.location]} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={[styles.textBase, styles.location]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              maxFontSizeMultiplier={1.5}
+            >
               {location}
             </Text>
           </View>
@@ -102,19 +124,27 @@ const styles = StyleSheet.create({
     ...typeScale.display,
     textAlign: "center",
   },
+  businessNameCompact: {
+    fontSize: 28,
+    lineHeight: 36,
+  },
   tagline: {
     ...typeScale.bodyLg,
     color: colors.dark.textSecondary,
     textAlign: "center",
+    flexShrink: 1,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing["space-2"],
+    width: "100%",
+    justifyContent: "center",
   },
   location: {
     ...typeScale.body,
     color: colors.dark.textSecondary,
+    flexShrink: 1,
   },
   button: {
     width: "100%",
