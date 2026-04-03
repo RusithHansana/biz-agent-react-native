@@ -34,7 +34,6 @@ describe('requireApiKey middleware', () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    jest.resetAllMocks();
   });
 
   it('returns 401 wrapper when API key header is missing', () => {
