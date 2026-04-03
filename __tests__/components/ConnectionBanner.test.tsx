@@ -20,4 +20,10 @@ describe("ConnectionBanner", () => {
     expect(alert.props.accessibilityRole).toBe("alert");
     expect(screen.getByText("Connection lost")).toBeTruthy();
   });
+
+  it("applies maxFontSizeMultiplier to banner label", () => {
+    render(<ConnectionBanner isConnected={false} />);
+
+    expect(screen.getByText("Connection lost").props.maxFontSizeMultiplier).toBe(1.5);
+  });
 });

@@ -89,7 +89,7 @@ function mapChatErrorCodeToMessage(errorCode?: string): string {
 export default function ChatScreen() {
   const theme = useTheme();
   const { state, dispatch } = useAppContext();
-  const { isSpacious } = useResponsiveLayout();
+  const { isSpacious, spacing: responsiveSpacing } = useResponsiveLayout();
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -305,7 +305,12 @@ export default function ChatScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
-        <Appbar.Content title={businessProfile.name} subtitle="AI Receptionist" />
+        <Appbar.Content
+          title={businessProfile.name}
+          subtitle="AI Receptionist"
+          titleMaxFontSizeMultiplier={1.5}
+          subtitleMaxFontSizeMultiplier={1.5}
+        />
       </Appbar.Header>
       <ConnectionBanner isConnected={state.isConnected} />
       <KeyboardAvoidingView
@@ -324,7 +329,10 @@ export default function ChatScreen() {
           renderTime={() => null}
           renderDay={() => null}
           renderInputToolbar={() => null}
-          messagesContainerStyle={[styles.threadContainer, isSpacious ? styles.threadContainerSpacious : null]}
+          messagesContainerStyle={[
+            styles.threadContainer,
+            isSpacious ? { paddingHorizontal: spacing[responsiveSpacing.screenPaddingX] } : null,
+          ]}
         />
         <MessageInput
           onSend={handleSendText}
@@ -342,8 +350,5 @@ const styles = StyleSheet.create({
   },
   threadContainer: {
     backgroundColor: "transparent",
-  },
-  threadContainerSpacious: {
-    paddingHorizontal: spacing["space-6"],
   },
 });

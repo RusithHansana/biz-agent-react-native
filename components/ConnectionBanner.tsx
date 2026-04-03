@@ -111,7 +111,7 @@ function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
     >
       <View style={styles.content}>
         {isReconnecting ? <ActivityIndicator color={colors.dark.warning} size="small" style={styles.spinner} /> : null}
-        <Text style={styles.label}>{isReconnecting ? "Reconnecting..." : "Connection lost"}</Text>
+        <Text style={styles.label} maxFontSizeMultiplier={1.5}>{isReconnecting ? "Reconnecting..." : "Connection lost"}</Text>
       </View>
     </Animated.View>
   );

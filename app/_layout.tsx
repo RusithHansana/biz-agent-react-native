@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
 import { PaperProvider } from "react-native-paper";
 
@@ -18,6 +19,12 @@ export default function RootLayout() {
     "Outfit-SemiBold": require("../assets/fonts/Outfit-SemiBold.ttf"),
     "Outfit-Bold": require("../assets/fonts/Outfit-Bold.ttf"),
   });
+
+  useEffect(() => {
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((error: unknown) => {
+      console.error("Orientation lock failed:", error);
+    });
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

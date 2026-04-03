@@ -1,6 +1,8 @@
 import React from "react";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
+import { StyleSheet } from "react-native";
 
 import ChatScreen, { CHAT_ERROR_CODE_TO_MESSAGE, GENERIC_CHAT_ERROR_MESSAGE } from "../../app/chat";
 import { createBooking } from "../../services/bookingService";
@@ -39,15 +41,17 @@ jest.mock("../../components/MessageInput", () => ({
 jest.mock("react-native-gifted-chat", () => ({
   GiftedChat: ({
     messages,
+    messagesContainerStyle,
     renderCustomView,
   }: {
     messages: Array<Record<string, unknown>>;
+    messagesContainerStyle?: unknown;
     renderCustomView?: (p: { currentMessage: Record<string, unknown> }) => React.ReactNode;
   }) => {
     const React = require("react");
     const { Text, View } = require("react-native");
     return (
-      <View>
+      <View testID="chat-thread-container" style={messagesContainerStyle}>
         {messages.map((message) => (
           <React.Fragment key={String(message._id)}>
             {message.text ? <Text>{String(message.text)}</Text> : null}
@@ -81,6 +85,7 @@ const mockedUseAppContext = useAppContext as jest.MockedFunction<typeof useAppCo
 const mockedCreateBooking = createBooking as jest.MockedFunction<typeof createBooking>;
 const mockedAddPendingBooking = addPendingBooking as jest.MockedFunction<typeof addPendingBooking>;
 const mockedSendMessage = require("../../services/chatService").sendMessage as jest.Mock;
+const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
 
 const getDispatchedBotTexts = (): string[] => {
   return mockDispatch.mock.calls
@@ -91,6 +96,13 @@ const getDispatchedBotTexts = (): string[] => {
 
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
+    useWindowDimensionsSpy.mockReturnValue({
+      width: 390,
+      height: 844,
+      scale: 3,
+      fontScale: 1,
+    });
+
     mockedUseAppContext.mockReturnValue({
       state: {
         messages: [],
@@ -100,6 +112,10 @@ describe("ChatScreen booking integration", () => {
       },
       dispatch: mockDispatch,
     });
+  });
+
+  afterEach(() => {
+    useWindowDimensionsSpy.mockReset();
   });
 
   it("calls createBooking when backend functionCall requests createBooking", async () => {
@@ -298,5 +314,21 @@ describe("ChatScreen booking integration", () => {
       expect(botTexts.join(" ")).not.toContain("Socket hang up");
       expect(botTexts.join(" ")).not.toContain("500");
     });
+  });
+
+  it("applies spacious thread padding on widths above 414px", () => {
+    useWindowDimensionsSpy.mockReturnValue({
+      width: 430,
+      height: 900,
+      scale: 3,
+      fontScale: 1,
+    });
+
+    render(<ChatScreen />);
+
+    const threadContainer = screen.getByTestId("chat-thread-container");
+    const flattened = StyleSheet.flatten(threadContainer.props.style);
+
+    expect(flattened.paddingHorizontal).toBe(24);
   });
 });

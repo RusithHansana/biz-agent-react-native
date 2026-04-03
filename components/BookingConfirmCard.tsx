@@ -55,29 +55,29 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
     >
       <View style={styles.headerRow}>
         <MaterialCommunityIcons name="check-circle" size={20} color={theme.dark ? colors.dark.success : "#059669"} />
-        <Text style={[styles.headerText, { color: theme.colors.onSurface }]}>Booking Confirmed</Text>
+        <Text style={[styles.headerText, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>Booking Confirmed</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.fieldRow}>
-          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Name</Text>
-          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.name}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.5}>Name</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>{booking.name}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Service</Text>
-          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.serviceType}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.5}>Service</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>{booking.serviceType}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Date</Text>
-          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.date}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.5}>Date</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>{booking.date}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Time</Text>
-          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.time}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.5}>Time</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>{booking.time}</Text>
         </View>
         <View style={styles.fieldRow}>
-          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Email</Text>
-          <Text style={[styles.value, { color: theme.colors.onSurface }]}>{booking.email}</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.5}>Email</Text>
+          <Text style={[styles.value, { color: theme.colors.onSurface }]} maxFontSizeMultiplier={1.5}>{booking.email}</Text>
         </View>
       </View>
     </Animated.View>

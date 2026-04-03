@@ -57,4 +57,20 @@ describe("BookingConfirmCard", () => {
       ]),
     );
   });
+
+  it("applies maxFontSizeMultiplier to all user-facing text", () => {
+    render(<BookingConfirmCard booking={booking} />);
+
+    expect(screen.getByText("Booking Confirmed").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Name").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Jane Doe").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Service").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("intro-call").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Date").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("2026-03-31").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Time").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("10:00").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("Email").props.maxFontSizeMultiplier).toBe(1.5);
+    expect(screen.getByText("jane@example.com").props.maxFontSizeMultiplier).toBe(1.5);
+  });
 });
