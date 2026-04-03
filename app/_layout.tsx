@@ -28,11 +28,11 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  const reduceMotion = useReducedMotion();
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
-
-  const reduceMotion = useReducedMotion();
 
   return (
     <PaperProvider theme={paperDarkTheme}>
