@@ -48,7 +48,6 @@ describe('POST /api/book handler', () => {
       RATE_LIMIT_RPD: '999999',
     };
     resetRateLimiterStateForTests();
-    jest.resetAllMocks();
     mockedFindConflict.mockResolvedValue(false);
     mockedAppendBookingRow.mockResolvedValue();
   });
@@ -86,7 +85,7 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
       },
       headers: {},
     };
@@ -112,7 +111,7 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
       },
       headers: { 'x-api-key': 'wrong-key' },
     };
@@ -195,7 +194,7 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
       },
       headers: { 'x-api-key': 'test-api-key' },
     };
@@ -214,7 +213,7 @@ describe('POST /api/book handler', () => {
     });
     expect(mockedFindConflict).toHaveBeenCalledWith({
       date: '2026-03-23',
-      time: '14:00',
+      time: '10:00',
       durationMinutes: 30,
     });
     expect(mockedAppendBookingRow).not.toHaveBeenCalled();
@@ -229,7 +228,7 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
       },
       headers: { 'x-api-key': 'test-api-key' },
     };
@@ -248,7 +247,7 @@ describe('POST /api/book handler', () => {
     });
     expect(mockedFindConflict).toHaveBeenCalledWith({
       date: '2026-03-23',
-      time: '14:00',
+      time: '10:00',
       durationMinutes: 30,
     });
   });
@@ -260,7 +259,7 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
       },
       headers: { 'x-api-key': 'test-api-key' },
     };
@@ -270,7 +269,7 @@ describe('POST /api/book handler', () => {
 
     expect(mockedFindConflict).toHaveBeenCalledWith({
       date: '2026-03-23',
-      time: '14:00',
+      time: '10:00',
       durationMinutes: 30,
     });
     expect(mockedAppendBookingRow).toHaveBeenCalledWith({
@@ -278,7 +277,7 @@ describe('POST /api/book handler', () => {
       email: 'sarah@email.com',
       serviceType: 'intro-call',
       date: '2026-03-23',
-      time: '14:00',
+      time: '10:00',
       durationMinutes: 30,
     });
     expect(res.statusCode).toBe(200);
@@ -288,9 +287,9 @@ describe('POST /api/book handler', () => {
         name: 'Sarah Jones',
         email: 'sarah@email.com',
         serviceType: 'intro-call',
-        dateTime: '2026-03-23T14:00:00Z',
+        dateTime: '2026-03-23T04:30:00Z',
         date: '2026-03-23',
-        time: '14:00',
+        time: '10:00',
       },
       error: null,
     });

@@ -35,7 +35,6 @@ describe('rateLimit middleware', () => {
     process.env = { ...originalEnv };
     resetRateLimiterStateForTests();
     jest.useRealTimers();
-    jest.resetAllMocks();
   });
 
   afterAll(() => {

@@ -51,7 +51,6 @@ describe('POST /api/chat handler', () => {
       RATE_LIMIT_TPM: '200000',
       RATE_LIMIT_RPD: '18',
     };
-    jest.resetAllMocks();
     resetRateLimiterStateForTests();
   });
 
@@ -142,7 +141,7 @@ describe('POST /api/chat handler', () => {
   it('returns reply in ApiResponse wrapper on success', async () => {
     mockedGenerateGeminiReply.mockResolvedValue({
       reply: 'Hello! How can I help today?',
-      functionCall: { name: 'createBooking' },
+      functionCall: { name: 'createBooking', args: { name: 'test', email: 'test@example.com', serviceType: 'intro-call', dateTime: '2026-03-31T10:00:00Z' } },
     });
 
     const req: MockRequest = {
@@ -169,7 +168,7 @@ describe('POST /api/chat handler', () => {
       success: true,
       data: {
         reply: 'Hello! How can I help today?',
-        functionCall: { name: 'createBooking' },
+        functionCall: { name: 'createBooking', args: { name: 'test', email: 'test@example.com', serviceType: 'intro-call', dateTime: '2026-03-31T10:00:00Z' } },
       },
       error: null,
     });
@@ -247,7 +246,7 @@ describe('POST /api/chat handler', () => {
 
     mockedGenerateGeminiReply.mockResolvedValue({
       reply: 'First response',
-      functionCall: { name: 'noop' },
+      functionCall: { name: 'createBooking', args: { name: 'test', email: 'test@example.com', serviceType: 'intro-call', dateTime: '2026-03-31T10:00:00Z' } },
     });
 
     const req: MockRequest = {

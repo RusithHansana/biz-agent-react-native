@@ -91,7 +91,6 @@ const getDispatchedBotTexts = (): string[] => {
 
 describe("ChatScreen booking integration", () => {
   beforeEach(() => {
-    jest.resetAllMocks();
     mockedUseAppContext.mockReturnValue({
       state: {
         messages: [],
@@ -101,10 +100,6 @@ describe("ChatScreen booking integration", () => {
       },
       dispatch: mockDispatch,
     });
-  });
-
-  afterEach(() => {
-    jest.resetAllMocks();
   });
 
   it("calls createBooking when backend functionCall requests createBooking", async () => {
