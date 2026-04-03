@@ -1,24 +1,81 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { useSyncExternalStore } from "react";
+import { AccessibilityInfo } from "react-native";
 
-export function useReducedMotion() {
-  const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
+type StoreListener = () => void;
 
-  useEffect(() => {
-    // Get the initial state
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotionEnabled);
+let reduceMotionEnabled = true;
+let hasReceivedEvent = false;
+let nativeSubscription: { remove?: () => void } | null = null;
+const listeners = new Set<StoreListener>();
 
-    // Subscribe to changes
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotionEnabled
-    );
+function notifyListeners(): void {
+  listeners.forEach((listener) => listener());
+}
 
-    // Cleanup subscription
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+function setReduceMotionEnabled(nextValue: boolean): void {
+  if (reduceMotionEnabled === nextValue) {
+    return;
+  }
 
+  reduceMotionEnabled = nextValue;
+  notifyListeners();
+}
+
+function initializeStore(): void {
+  if (nativeSubscription) {
+    return;
+  }
+
+  hasReceivedEvent = false;
+
+  void AccessibilityInfo.isReduceMotionEnabled()
+    .then((enabled) => {
+      if (!hasReceivedEvent) {
+        setReduceMotionEnabled(Boolean(enabled));
+      }
+    })
+    .catch(() => {
+      // Motion-safe fallback if platform query fails.
+      setReduceMotionEnabled(true);
+    });
+
+  nativeSubscription = AccessibilityInfo.addEventListener("reduceMotionChanged", (enabled) => {
+    hasReceivedEvent = true;
+    setReduceMotionEnabled(Boolean(enabled));
+  });
+}
+
+function cleanupStoreIfUnused(): void {
+  if (listeners.size > 0) {
+    return;
+  }
+
+  nativeSubscription?.remove?.();
+  nativeSubscription = null;
+}
+
+function subscribe(listener: StoreListener): () => void {
+  listeners.add(listener);
+  initializeStore();
+
+  return () => {
+    listeners.delete(listener);
+    cleanupStoreIfUnused();
+  };
+}
+
+function getSnapshot(): boolean {
   return reduceMotionEnabled;
+}
+
+export function useReducedMotion(): boolean {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+export function __resetReducedMotionStoreForTests(): void {
+  listeners.clear();
+  nativeSubscription?.remove?.();
+  nativeSubscription = null;
+  reduceMotionEnabled = true;
+  hasReceivedEvent = false;
 }

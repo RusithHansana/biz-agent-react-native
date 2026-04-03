@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
 import { Text, useTheme } from "react-native-paper";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
@@ -24,12 +24,11 @@ export function BookingConfirmCard({ booking }: BookingConfirmCardProps) {
     if (reduceMotion) {
       scale.value = 1;
     } else {
-      scale.value = withSpring(1, {
-        mass: 1,
-        damping: 15,
-        stiffness: 100,
-        overshootClamping: false,
-      });
+      scale.value = 0.8;
+      scale.value = withSequence(
+        withTiming(1.06, { duration: 240 }),
+        withTiming(1, { duration: 160 })
+      );
     }
   }, [scale, reduceMotion]);
 
