@@ -43,6 +43,7 @@ export function LandingHero({ businessName, tagline, location, logoUri, onPressC
             style={[styles.textBase, styles.businessName, isCompact ? styles.businessNameCompact : null]}
             numberOfLines={2}
             ellipsizeMode="tail"
+            accessibilityRole="header"
             maxFontSizeMultiplier={1.5}
           >
             {businessName}
@@ -75,6 +76,7 @@ export function LandingHero({ businessName, tagline, location, logoUri, onPressC
             textColor={colors.dark.userBubbleText}
             onPress={onPressChat}
             disabled={!onPressChat}
+            accessibilityRole="button"
             accessibilityLabel="Chat with Agent"
             accessibilityHint="Opens the chat screen"
             contentStyle={styles.buttonContent}

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, TextInputKeyPressEvent, View } from "react-native";
 import { IconButton, TextInput } from "react-native-paper";
 
@@ -17,14 +17,26 @@ export interface MessageInputProps {
   readonly onSend: (message: string) => void;
   readonly disabled: boolean;
   readonly placeholder: string;
+  readonly autoFocus?: boolean;
 }
 
-function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputProps) {
+function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = false }: MessageInputProps) {
   const [draft, setDraft] = useState("");
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const { spacing: responsiveSpacing } = useResponsiveLayout();
+  const inputRef = useRef<any>(null);
 
   const canSend = useMemo(() => !disabled && draft.trim().length > 0, [disabled, draft]);
+
+  useEffect(() => {
+    if (autoFocus && !disabled && inputRef.current) {
+      // Focus after a short delay to prevent UI jank during transitions
+      const timer = setTimeout(() => {
+        inputRef.current?.focus?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus, disabled]);
 
   const clearDraft = useCallback(() => {
     setDraft("");
@@ -85,6 +97,7 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
     <View testID="message-input-wrapper" style={[styles.wrapper, { paddingHorizontal: spacing[responsiveSpacing.inputPaddingX] }]}>
       <View style={styles.inputContainer}>
         <TextInput
+          ref={inputRef}
           mode="flat"
           value={draft}
           multiline
@@ -115,7 +128,9 @@ function MessageInputComponent({ onSend, disabled, placeholder }: MessageInputPr
           size={20}
           style={styles.sendButton}
           disabled={!canSend}
+          accessibilityRole="button"
           accessibilityLabel="Send message"
+          accessibilityHint={disabled ? "Chat is offline" : "Sends the current message"}
           accessibilityState={{ disabled: !canSend }}
           onPress={handleSend}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}

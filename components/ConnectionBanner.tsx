@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { memo, useEffect, useRef, useState } from "react";
 import { Animated, Easing, LayoutChangeEvent, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
@@ -110,7 +111,11 @@ function ConnectionBannerComponent({ isConnected }: ConnectionBannerProps) {
       onLayout={handleLayout}
     >
       <View style={styles.content}>
-        {isReconnecting ? <ActivityIndicator color={colors.dark.warning} size="small" style={styles.spinner} /> : null}
+        {isReconnecting ? (
+          <ActivityIndicator color={colors.dark.warning} size="small" style={styles.spinner} />
+        ) : (
+          <MaterialCommunityIcons name="alert-circle" size={20} color={colors.dark.warning} style={styles.spinner} />
+        )}
         <Text style={styles.label} maxFontSizeMultiplier={1.5}>{isReconnecting ? "Reconnecting..." : "Connection lost"}</Text>
       </View>
     </Animated.View>

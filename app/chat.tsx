@@ -312,7 +312,7 @@ export default function ChatScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
         <Appbar.Content
-          title={<Text variant="titleMedium" maxFontSizeMultiplier={1.5}>{businessProfile.name}</Text>}
+          title={<Text accessibilityRole="header" variant="titleMedium" maxFontSizeMultiplier={1.5}>{businessProfile.name}</Text>}
           subtitle={<Text variant="bodyMedium" maxFontSizeMultiplier={1.5}>AI Receptionist</Text>}
         />
       </Appbar.Header>
@@ -342,6 +342,7 @@ export default function ChatScreen() {
           onSend={handleSendText}
           disabled={!state.isConnected}
           placeholder={state.isConnected ? "Type a message..." : "Waiting for connection..."}
+          autoFocus
         />
       </KeyboardAvoidingView>
     </View>

@@ -73,4 +73,10 @@ describe("BookingConfirmCard", () => {
     expect(screen.getByText("Email").props.maxFontSizeMultiplier).toBe(1.5);
     expect(screen.getByText("jane@example.com").props.maxFontSizeMultiplier).toBe(1.5);
   });
+
+  it("uses the required booking confirmation accessibility announcement", () => {
+    render(<BookingConfirmCard booking={booking} />);
+
+    expect(screen.getByLabelText("Booking confirmed: intro-call on 2026-03-31 at 10:00")).toBeTruthy();
+  });
 });
