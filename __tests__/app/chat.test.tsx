@@ -8,6 +8,7 @@ import ChatScreen, { CHAT_ERROR_CODE_TO_MESSAGE, GENERIC_CHAT_ERROR_MESSAGE } fr
 import { createBooking } from "../../services/bookingService";
 import { ADD_PENDING_BOOKING } from "../../state/actions";
 import { useAppContext } from "../../state/AppContext";
+import { spacing } from "../../theme/spacing";
 import { addPendingBooking } from "../../utils/storage";
 
 import type { ChatResponseData } from "../../types/chat";
@@ -52,7 +53,7 @@ jest.mock("react-native-gifted-chat", () => ({
     const { Text, View } = require("react-native");
     return (
       <View testID="chat-thread-container" style={messagesContainerStyle}>
-        {messages.map((message) => (
+        {(messages || []).map((message) => (
           <React.Fragment key={String(message._id)}>
             {message.text ? <Text>{String(message.text)}</Text> : null}
             {renderCustomView ? renderCustomView({ currentMessage: message }) : null}
@@ -115,7 +116,7 @@ describe("ChatScreen booking integration", () => {
   });
 
   afterEach(() => {
-    useWindowDimensionsSpy.mockReset();
+    useWindowDimensionsSpy.mockClear();
   });
 
   it("calls createBooking when backend functionCall requests createBooking", async () => {
@@ -329,6 +330,6 @@ describe("ChatScreen booking integration", () => {
     const threadContainer = screen.getByTestId("chat-thread-container");
     const flattened = StyleSheet.flatten(threadContainer.props.style);
 
-    expect(flattened.paddingHorizontal).toBe(24);
+    expect(flattened.paddingHorizontal).toBe(spacing["space-6"]);
   });
 });

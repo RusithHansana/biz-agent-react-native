@@ -21,9 +21,13 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((error: unknown) => {
-      console.error("Orientation lock failed:", error);
-    });
+    try {
+      void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((error: unknown) => {
+        console.error("Orientation lock failed:", error);
+      });
+    } catch (error) {
+      console.error("Orientation lock synchronously failed:", error);
+    }
   }, []);
 
   useEffect(() => {

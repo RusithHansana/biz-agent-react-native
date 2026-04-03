@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as Crypto from "expo-crypto";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { GiftedChat, type BubbleProps, type IMessage } from "react-native-gifted-chat";
-import { Appbar, useTheme } from "react-native-paper";
+import { Appbar, Text, useTheme } from "react-native-paper";
 
 import { ChatBubble } from "../components/ChatBubble";
 import { ConnectionBanner } from "../components/ConnectionBanner";
@@ -302,14 +302,18 @@ export default function ChatScreen() {
     [state.isLoading],
   );
 
+  const paddingHorizontal = spacing[responsiveSpacing.screenPaddingX as keyof typeof spacing];
+  const spaciousStyle = useMemo(
+    () => (isSpacious && paddingHorizontal !== undefined ? { paddingHorizontal } : null),
+    [isSpacious, paddingHorizontal]
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
         <Appbar.Content
-          title={businessProfile.name}
-          subtitle="AI Receptionist"
-          titleMaxFontSizeMultiplier={1.5}
-          subtitleMaxFontSizeMultiplier={1.5}
+          title={<Text variant="titleMedium" maxFontSizeMultiplier={1.5}>{businessProfile.name}</Text>}
+          subtitle={<Text variant="bodyMedium" maxFontSizeMultiplier={1.5}>AI Receptionist</Text>}
         />
       </Appbar.Header>
       <ConnectionBanner isConnected={state.isConnected} />
@@ -331,7 +335,7 @@ export default function ChatScreen() {
           renderInputToolbar={() => null}
           messagesContainerStyle={[
             styles.threadContainer,
-            isSpacious ? { paddingHorizontal: spacing[responsiveSpacing.screenPaddingX] } : null,
+            spaciousStyle,
           ]}
         />
         <MessageInput

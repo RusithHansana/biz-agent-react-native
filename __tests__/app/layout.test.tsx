@@ -42,4 +42,30 @@ describe("RootLayout", () => {
       expect(mockLockAsync).toHaveBeenCalledWith("PORTRAIT_UP");
     });
   });
+
+  it("handles orientation lock rejection gracefully", async () => {
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    const error = new Error("Lock failed");
+    mockLockAsync.mockRejectedValueOnce(error);
+
+    render(<RootLayout />);
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Orientation lock failed:", error);
+    });
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("handles synchronous orientation lock failures gracefully", () => {
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    const error = new Error("Sync failure");
+    mockLockAsync.mockImplementationOnce(() => { throw error; });
+
+    render(<RootLayout />);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Orientation lock synchronously failed:", error);
+
+    consoleErrorSpy.mockRestore();
+  });
 });
