@@ -57,11 +57,13 @@ BizAgent is a cross-platform mobile application that gives service-based small b
 
 ## Demo
 
-<!-- TODO: Replace with actual screenshots / screen recordings -->
-
-| Landing Screen | Chat Interface | Booking Confirmed |
+| Landing Screen | Chat Greeting | Chat Conversation |
 |:-:|:-:|:-:|
-| ![Landing](docs/screenshots/landing.png) | ![Chat](docs/screenshots/chat.png) | ![Booking](docs/screenshots/booking_confirmed.png) |
+| <img src=".github/assets/landing-screen.jpg" width="250"/> | <img src=".github/assets/chat-greeting.jpg" width="250"/> | <img src=".github/assets/convo-start.jpg" width="250"/> |
+
+| Continue Conversation | Booking Confirmed |
+|:-:|:-:|
+| <img src=".github/assets/convo-continue.jpg" width="250"/> | <img src=".github/assets/booking-confirmed.jpg" width="250"/> |
 
 <!-- TODO: Add link to live demo video (e.g. YouTube, Loom) -->
 <!-- ▶️ [Watch the full demo video](#) -->
