@@ -47,6 +47,6 @@ app-example
 _bmad/
 _bmad-*/
 .agent/
-.github/
+.github/skills
 .gemini/
 .vercel

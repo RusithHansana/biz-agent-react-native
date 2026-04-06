@@ -25,6 +25,7 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const { spacing: responsiveSpacing } = useResponsiveLayout();
   const inputRef = useRef<any>(null);
+  const sendTriggeredByEnterRef = useRef(false);
 
   const canSend = useMemo(() => !disabled && draft.trim().length > 0, [disabled, draft]);
 
@@ -39,6 +40,8 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
   }, [autoFocus, disabled]);
 
   const clearDraft = useCallback(() => {
+    // Keep native and controlled states aligned after hardware keyboard submits.
+    inputRef.current?.clear?.();
     setDraft("");
     setInputHeight(MIN_INPUT_HEIGHT);
   }, []);
@@ -80,15 +83,28 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
     const nativeEvent = event.nativeEvent as TextInputKeyPressEvent["nativeEvent"] & { shiftKey?: boolean };
 
     if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
+      sendTriggeredByEnterRef.current = true;
+      event.preventDefault?.();
       handleSend();
     }
   }, [disabled, handleSend]);
 
   const handleChangeText = useCallback(
     (text: string) => {
-      if (!disabled) {
-        setDraft(text);
+      if (disabled) {
+        return;
       }
+
+      if (sendTriggeredByEnterRef.current) {
+        sendTriggeredByEnterRef.current = false;
+
+        // Android/iOS can still emit a trailing newline after Enter; strip only that artifact.
+        const withoutTrailingSubmitNewline = text.replace(/\r?\n$/, "");
+        setDraft(withoutTrailingSubmitNewline);
+        return;
+      }
+
+      setDraft(text);
     },
     [disabled],
   );
@@ -117,6 +133,7 @@ function MessageInputComponent({ onSend, disabled, placeholder, autoFocus = fals
           underlineColor="transparent"
           activeUnderlineColor="transparent"
           selectionColor={colors.dark.accentPrimary}
+          cursorColor={colors.dark.accentPrimary}
           maxFontSizeMultiplier={1.5}
         />
 
