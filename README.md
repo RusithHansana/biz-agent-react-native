@@ -156,7 +156,6 @@ Watch how the AI handles the conversation to book an appointment, and how it sea
 6. **Start the backend (local dev)**
 
    ```bash
-   cd server
    npx vercel dev
    ```
 
@@ -177,6 +176,11 @@ cp server/.env.example server/.env
 | Variable | Description |
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | Entire JSON key file contents of your Google Service Account (stringified) |
+| `GOOGLE_CLOUD_PROJECT` | Vertex AI project ID (required if using GOOGLE_SERVICE_ACCOUNT_KEY for Gemini) |
+| `GOOGLE_CLOUD_LOCATION` | Vertex AI location, e.g. `us-central1` |
+| `GEMINI_API_KEY` | Gemini API key (alternative to service account auth) |
+| `GEMINI_MODEL` | Gemini model to use (default: `gemini-2.5-flash`) |
+| `GEMINI_TIMEOUT_MS` | API request timeout in milliseconds (default: `15000`) |
 | `SHEET_ID` | Google Sheet document ID (from the URL) |
 | `API_KEY` | Shared secret for `X-API-Key` header authentication |
 | `RATE_LIMIT_RPM` | Max requests per minute to Gemini (default: `4`) |
@@ -217,7 +221,7 @@ biz-agent-react-native/
 ├── theme/                   # Design tokens (colors, typography, spacing)
 ├── data/                    # Static business profile JSON
 ├── assets/                  # Fonts (Inter, Outfit), images
-├── __tests__/               # Client-side tests (mirrors source)
+├── __tests__/               # Centralized tests (client-side and server-side)
 │
 ├── server/                  # Backend (deployed to Vercel)
 │   ├── api/                 # Serverless function endpoints
@@ -231,9 +235,10 @@ biz-agent-react-native/
 │   │   ├── rateLimiter.ts   # Sliding window rate limiter
 │   │   ├── validation.ts    # Request payload sanitization
 │   │   └── systemPrompt.ts  # AI system prompt builder
-│   ├── types/               # Backend-specific types
-│   └── __tests__/           # Backend tests
+│   └── types/               # Backend-specific types
 │
+├── .agent/                  # BMad agent configurations and skills
+├── docs/                    # Project documentation
 └── _bmad-output/            # Planning artifacts (PRD, architecture, epics)
 ```
 
@@ -265,16 +270,21 @@ All endpoints require an `X-API-Key` header.
 
 ### Backend (Vercel)
 
-1. Link the project to Vercel:
+1. Link the project to Vercel (from root):
 
    ```bash
-   cd server && vercel link
+   vercel link
    ```
 
 2. Set environment variables in the Vercel dashboard (or via CLI):
 
    ```bash
    vercel env add GOOGLE_SERVICE_ACCOUNT_KEY
+   vercel env add GOOGLE_CLOUD_PROJECT
+   vercel env add GOOGLE_CLOUD_LOCATION
+   vercel env add GEMINI_API_KEY
+   vercel env add GEMINI_MODEL
+   vercel env add GEMINI_TIMEOUT_MS
    vercel env add SHEET_ID
    vercel env add API_KEY
    vercel env add RATE_LIMIT_RPM
