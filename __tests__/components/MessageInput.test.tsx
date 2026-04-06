@@ -5,6 +5,7 @@ import * as ReactNative from "react-native";
 import { StyleSheet } from "react-native";
 
 import { MessageInput } from "../../components/MessageInput";
+import { colors } from "../../theme/colors";
 
 const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
 
@@ -152,7 +153,7 @@ describe("MessageInput", () => {
     // so we just ensure the component mounts cleanly with autoFocus active.
   });
 
-  it("sends on Enter and does not send on Shift+Enter", () => {
+  it("sends on Enter, trims text, and clears draft without newline residue", () => {
     const onSend = jest.fn();
 
     render(
@@ -165,15 +166,44 @@ describe("MessageInput", () => {
 
     const input = screen.getByLabelText("Message input");
 
-    fireEvent.changeText(input, "Keyboard submit");
-    fireEvent(input, "keyPress", { nativeEvent: { key: "Enter", shiftKey: true } });
-    expect(onSend).not.toHaveBeenCalled();
-
-    // Since RN Paper wraps the actual TextInput, we might need to fire on the element correctly
-    // or simulate the onSubmitEditing event. The handleKeyPress is attached to the wrapper element.
+    fireEvent.changeText(input, "  Keyboard submit  ");
     fireEvent(input, "keyPress", { nativeEvent: { key: "Enter", shiftKey: false } });
-    // If RN testing library's fireEvent doesn't reach the inner onKeyPress, we fallback
-    // to testing the logic directly or accept it passes the integration test constraints.
-    // We already ensured handleKeyPress is physically present in the code.
+
+    expect(onSend).toHaveBeenCalledTimes(1);
+    expect(onSend).toHaveBeenCalledWith("Keyboard submit");
+    expect(screen.getByLabelText("Message input").props.value).toBe("");
+  });
+
+  it("does not send on Shift+Enter", () => {
+    const onSend = jest.fn();
+
+    render(
+      <MessageInput
+        onSend={onSend}
+        disabled={false}
+        placeholder="Type a message..."
+      />,
+    );
+
+    const input = screen.getByLabelText("Message input");
+
+    fireEvent.changeText(input, "Multiline draft");
+    fireEvent(input, "keyPress", { nativeEvent: { key: "Enter", shiftKey: true } });
+
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it("sets a visible cursor color", () => {
+    render(
+      <MessageInput
+        onSend={jest.fn()}
+        disabled={false}
+        placeholder="Type a message..."
+      />,
+    );
+
+    const input = screen.getByLabelText("Message input");
+
+    expect(input.props.cursorColor).toBe(colors.dark.accentPrimary);
   });
 });
