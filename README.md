@@ -1,5 +1,4 @@
 <p align="center">
-  <!-- TODO: Replace with actual app icon/logo -->
   <img src="assets/images/icon.png" alt="BizAgent Logo" width="120" />
 </p>
 
@@ -22,7 +21,6 @@
 </p>
 
 <p align="center">
-  <!-- TODO: Add actual badge URLs once CI/CD and publishing are set up -->
   <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/expo-SDK%2054-000020?logo=expo" alt="Expo SDK" />
   <img src="https://img.shields.io/badge/react%20native-0.81-61DAFB?logo=react" alt="React Native" />
@@ -34,11 +32,6 @@
 ## Overview
 
 BizAgent is a cross-platform mobile application that gives service-based small businesses — real estate agencies, dental clinics, consultancies, and more — a 24/7 AI-powered receptionist. Users interact with an intelligent chatbot that answers FAQs, qualifies leads, validates appointment availability, prevents double bookings, and writes confirmed appointments directly to a Google Sheet acting as a zero-cost CRM.
-
-<!-- TODO: Add a GIF or screenshot showing the app in action -->
-<!-- ![App Demo](docs/screenshots/demo.gif) -->
-
----
 
 ## Features
 
@@ -64,9 +57,6 @@ BizAgent is a cross-platform mobile application that gives service-based small b
 | Continue Conversation | Booking Confirmed |
 |:-:|:-:|
 | <img src=".github/assets/convo-continue.jpg" width="250"/> | <img src=".github/assets/booking-confirmed.jpg" width="250"/> |
-
-<!-- TODO: Add link to live demo video (e.g. YouTube, Loom) -->
-<!-- ▶️ [Watch the full demo video](#) -->
 
 ---
 
@@ -187,20 +177,17 @@ cp server/.env.example server/.env
 
 ### Mobile Client
 
-<!-- TODO: Document how the mobile client gets API_BASE_URL and API_KEY (e.g. app.config.js, .env, or constants file) -->
+The mobile client is configured via environment variables that map to Expo's `app.config.js`. Ensure you have a `.env` file in the root of your project:
 
-Update the API base URL and API key in the client configuration to point to your backend:
-
-```
-API_BASE_URL=https://your-vercel-deployment.vercel.app
-API_KEY=your-shared-secret
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://your-vercel-deployment.vercel.app
+EXPO_PUBLIC_API_KEY=your-shared-secret
 ```
 
 ### Business Profile
 
 Edit the business profile data file to customize for your client:
 
-<!-- TODO: Update this path once the file is created -->
 ```
 data/businessProfile.json
 ```
@@ -346,8 +333,6 @@ Please ensure your code follows the project's TypeScript strict mode and naming 
 ---
 
 ## License
-
-<!-- TODO: Add actual license file (LICENSE) to the repo root -->
 
 This project is licensed under the [MIT License](LICENSE).
 
