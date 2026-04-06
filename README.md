@@ -48,6 +48,14 @@ BizAgent is a cross-platform mobile application that gives service-based small b
 
 ---
 
+## Showcase: Automatic Google Sheets Integration
+
+Watch how the AI handles the conversation to book an appointment, and how it seamlessly syncs the confirmed booking directly into the business's Google Sheet in real-time.
+
+[Google-Sheet-Preview](https://github.com/user-attachments/assets/f5ba4dc8-98b4-48df-9f0e-1f7659d7d6a2)
+
+---
+
 ## Demo
 
 | Landing Screen | Chat Greeting | Chat Conversation |
