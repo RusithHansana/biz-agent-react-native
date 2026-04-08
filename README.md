@@ -338,15 +338,11 @@ To configure BizAgent for a new business client:
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are always welcome! 
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Please read our [Contributing Guide](CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes to BizAgent.
 
-Please ensure your code follows the project's TypeScript strict mode and naming conventions documented in `_bmad-output/project-context.md`.
+This project has adopted the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ---
 
